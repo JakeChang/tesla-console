@@ -26,6 +26,7 @@ export default defineNuxtConfig({
     tursoDbUrl: process.env.TURSO_DB_URL || 'file:data/tesla.db',
     tursoAuthToken: process.env.TURSO_AUTH_TOKEN || '',
     geminiApiKey: process.env.GEMINI_API_KEY || '',
+    mcpApiKey: process.env.MCP_API_KEY || '',
     public: {
       teslaRedirectUri: process.env.TESLA_REDIRECT_URI
     }
