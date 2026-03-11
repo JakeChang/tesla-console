@@ -1,35 +1,7 @@
 <template>
   <div v-if="!authChecked" class="min-h-screen bg-black"></div>
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
-    <!-- Header -->
-    <div class="navbar bg-black fixed top-0 left-0 right-0 z-50 px-4 border-b border-white/10">
-      <div class="navbar-start">
-        <div class="dropdown lg:hidden">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 bg-[#111111] border border-white/10 rounded-sm w-52 shadow-lg shadow-black/50">
-            <li><NuxtLink to="/" :class="mobileNavClass('/')">儀表板</NuxtLink></li>
-            <li><NuxtLink to="/charging" :class="mobileNavClass('/charging')">充電紀錄</NuxtLink></li>
-            <li><NuxtLink to="/report" :class="mobileNavClass('/report')">充電報表</NuxtLink></li>
-          </ul>
-        </div>
-        <div class="flex items-center ml-2">
-          <span class="text-xl font-light tracking-[0.3em] text-white">TESLA</span>
-          <span class="text-xs text-white/30 ml-3 hidden sm:inline tracking-wider">管理中心</span>
-        </div>
-      </div>
-      <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-1">
-          <li><NuxtLink to="/" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/')">儀表板</NuxtLink></li>
-          <li><NuxtLink to="/charging" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/charging')">充電紀錄</NuxtLink></li>
-          <li><NuxtLink to="/report" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/report')">充電報表</NuxtLink></li>
-        </ul>
-      </div>
-      <div class="navbar-end"></div>
-    </div>
+    <AppHeader />
 
     <!-- Content -->
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
@@ -225,11 +197,9 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute()
 const { checkSession } = useAuth()
+const { formatMonth, formatMonthFull, formatDay, formatAnalysisDate } = useFormatters()
 
-const mobileNavClass = (path) => route.path === path ? 'text-white font-medium' : ''
-const desktopNavClass = (path) => route.path === path ? 'text-white border-b-2 border-[#E31937] rounded-none' : 'text-white/50 hover:text-white'
 const authChecked = ref(false)
 const isLoading = ref(false)
 const report = ref(null)
@@ -252,7 +222,7 @@ onMounted(async () => {
 
 const loadAnalysisHistory = async () => {
   try {
-    const data = await $fetch('/api/charging/analyses')
+    const data = await $fetch('/api/report/analyses')
     analysisHistory.value = data
     if (data.length > 0) {
       selectedAnalysisId.value = data[0].id
@@ -271,21 +241,14 @@ const onSelectAnalysis = () => {
   }
 }
 
-const formatAnalysisDate = (ts) => {
-  if (!ts) return ''
-  const d = new Date(ts)
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
 const runAnalysis = async () => {
   isAnalyzing.value = true
   analysisError.value = ''
   try {
-    const data = await $fetch('/api/charging/analyze', { method: 'POST' })
+    const data = await $fetch('/api/report/analyze', { method: 'POST' })
     analysisText.value = data.analysis
-    // 重新載入歷史列表
     await loadAnalysisHistory()
-  } catch (err) {
+  } catch (err: any) {
     analysisError.value = err.data?.message || err.statusMessage || 'AI 分析失敗'
   } finally {
     isAnalyzing.value = false
@@ -303,9 +266,7 @@ const renderedAnalysis = computed(() => {
 })
 
 function parseMarkdown(md: string): string {
-  // 處理順序很重要
   let html = md
-    // 先處理表格
     .replace(/^(\|.+\|)\n(\|[-:\s|]+\|)\n((?:\|.+\|\n?)*)/gm, (_, header, sep, body) => {
       const headers = header.split('|').filter(c => c.trim()).map(c => `<th>${c.trim()}</th>`).join('')
       const rows = body.trim().split('\n').map(row => {
@@ -315,39 +276,31 @@ function parseMarkdown(md: string): string {
       return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>\n`
     })
 
-  // 按行處理
   const lines = html.split('\n')
   const result: string[] = []
   let inList = false
   let listType = ''
 
   for (let line of lines) {
-    // 標題
     if (line.match(/^#### /)) { closeLst(); result.push(`<h4>${processInline(line.slice(5))}</h4>`); continue }
     if (line.match(/^### /)) { closeLst(); result.push(`<h3>${processInline(line.slice(4))}</h3>`); continue }
     if (line.match(/^## /)) { closeLst(); result.push(`<h2>${processInline(line.slice(3))}</h2>`); continue }
     if (line.match(/^# /)) { closeLst(); result.push(`<h1>${processInline(line.slice(2))}</h1>`); continue }
-    // 分隔線
     if (line.match(/^---+$/)) { closeLst(); result.push('<hr />'); continue }
-    // 無序列表
     if (line.match(/^\s*[\-\*]\s+/)) {
       if (!inList || listType !== 'ul') { closeLst(); result.push('<ul>'); inList = true; listType = 'ul' }
       result.push(`<li>${processInline(line.replace(/^\s*[\-\*]\s+/, ''))}</li>`)
       continue
     }
-    // 有序列表
     if (line.match(/^\s*\d+\.\s+/)) {
       if (!inList || listType !== 'ol') { closeLst(); result.push('<ol>'); inList = true; listType = 'ol' }
       result.push(`<li>${processInline(line.replace(/^\s*\d+\.\s+/, ''))}</li>`)
       continue
     }
-    // 空行
     if (line.trim() === '') { closeLst(); result.push(''); continue }
-    // 已處理的表格 HTML
     if (line.startsWith('<table') || line.startsWith('<thead') || line.startsWith('<tbody') || line.startsWith('<tr') || line.startsWith('</')) {
       closeLst(); result.push(line); continue
     }
-    // 段落
     closeLst()
     result.push(`<p>${processInline(line)}</p>`)
   }
@@ -370,7 +323,7 @@ function processInline(text: string): string {
 const loadReport = async () => {
   isLoading.value = true
   try {
-    report.value = await $fetch('/api/charging/report')
+    report.value = await $fetch('/api/report')
   } catch (err) {
     console.error('載入報表失敗:', err)
   } finally {
@@ -398,22 +351,6 @@ const barHeightSessions = (count) => Math.max(Math.round((count / maxSessions.va
 
 const toggleMonth = (month) => {
   expandedMonth.value = expandedMonth.value === month ? null : month
-}
-
-const formatMonth = (month) => {
-  const [y, m] = month.split('-')
-  return `${m}月`
-}
-
-const formatMonthFull = (month) => {
-  const [y, m] = month.split('-')
-  return `${y} 年 ${parseInt(m)} 月`
-}
-
-const formatDay = (timestamp) => {
-  if (!timestamp) return '-'
-  const d = new Date(timestamp)
-  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
 }
 </script>
 

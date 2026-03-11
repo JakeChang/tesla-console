@@ -1,12 +1,10 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs } from '~~/server/database/schema'
 import { eq } from 'drizzle-orm'
-import { validateSession } from '~~/server/utils/session'
+import { requireAuth } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
-  if (!await validateSession(event)) {
-    throw createError({ statusCode: 401, statusMessage: '請先登入' })
-  }
+  await requireAuth(event)
 
   const id = Number(getRouterParam(event, 'id'))
   if (!id) {

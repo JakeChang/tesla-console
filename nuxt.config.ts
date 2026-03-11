@@ -18,8 +18,6 @@ export default defineNuxtConfig({
     teslaClientId: process.env.TESLA_CLIENT_ID,
     teslaClientSecret: process.env.TESLA_CLIENT_SECRET,
     teslaRedirectUri: process.env.TESLA_REDIRECT_URI,
-    teslaAuthUrl: process.env.TESLA_AUTH_URL,
-    teslaTokenUrl: process.env.TESLA_TOKEN_URL,
     adminUsername: process.env.ADMIN_USERNAME || 'admin',
     adminPassword: process.env.ADMIN_PASSWORD || '',
     sessionMaxAgeDays: process.env.SESSION_MAX_AGE_DAYS || '30',

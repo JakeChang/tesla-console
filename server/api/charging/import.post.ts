@@ -1,11 +1,10 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs } from '~~/server/database/schema'
-import { validateSession } from '~~/server/utils/session'
+import { requireAuth } from '~~/server/utils/auth'
+import { FAST_CHARGE_STATION_TYPES } from '~~/server/utils/constants'
 
 export default defineEventHandler(async (event) => {
-  if (!await validateSession(event)) {
-    throw createError({ statusCode: 401, statusMessage: '請先登入' })
-  }
+  await requireAuth(event)
 
   const body = await readBody(event)
   const records = body?.records
@@ -19,13 +18,9 @@ export default defineEventHandler(async (event) => {
 
   for (const r of records) {
     const stationType = r.station?.type || ''
-    // 判斷充電類型：supercharger/dc_fast 為快充，其餘為慢充
-    const chargeType = ['supercharger', 'dc_fast'].includes(stationType) ? 'fast' : 'slow'
-
-    // 組合地點名稱
+    const chargeType = FAST_CHARGE_STATION_TYPES.includes(stationType) ? 'fast' : 'slow'
     const location = r.station?.name || null
 
-    // 計算結束時間
     let endAt: Date | null = null
     if (r.completed_at) {
       endAt = new Date(r.completed_at)

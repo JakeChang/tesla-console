@@ -1,12 +1,11 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs, aiAnalyses } from '~~/server/database/schema'
 import { eq, desc } from 'drizzle-orm'
-import { validateSession } from '~~/server/utils/session'
+import { requireAuth } from '~~/server/utils/auth'
+import { groupByMonth, calcMonthStats } from '~~/server/utils/charging-stats'
 
 export default defineEventHandler(async (event) => {
-  if (!await validateSession(event)) {
-    throw createError({ statusCode: 401, statusMessage: '請先登入' })
-  }
+  await requireAuth(event)
 
   const config = useRuntimeConfig()
   if (!config.geminiApiKey) {
@@ -23,43 +22,25 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '沒有充電紀錄可分析' })
   }
 
-  // 準備統計資料給 AI
-  const monthlyMap = new Map<string, any[]>()
-  for (const log of logs) {
-    const d = new Date(log.start_at as any)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    if (!monthlyMap.has(key)) monthlyMap.set(key, [])
-    monthlyMap.get(key)!.push(log)
-  }
-
+  // 使用共用工具產生月度摘要
+  const monthlyMap = groupByMonth(logs)
   const monthlySummaries = Array.from(monthlyMap.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, records]) => {
-      const totalCost = records.reduce((s, r) => s + (r.cost_ntd || 0), 0)
-      const fastCount = records.filter(r => r.charge_type === 'fast').length
-      const slowCount = records.filter(r => r.charge_type === 'slow').length
-      let totalKwh = 0
-      for (const r of records) {
-        if (r.raw_data_start) {
-          try {
-            const raw = JSON.parse(r.raw_data_start)
-            if (raw.charging?.kwh) totalKwh += raw.charging.kwh
-          } catch {}
-        }
-      }
+      const stats = calcMonthStats(month, records)
       const withBattery = records.filter(r => r.battery_start != null && r.battery_end != null)
       const avgBatteryGain = withBattery.length > 0
-        ? withBattery.reduce((s, r) => s + ((r.battery_end || 0) - (r.battery_start || 0)), 0) / withBattery.length
+        ? Math.round(withBattery.reduce((s, r) => s + ((r.battery_end || 0) - (r.battery_start || 0)), 0) / withBattery.length)
         : null
 
       return {
-        month,
-        sessions: records.length,
-        totalCost: Math.round(totalCost),
-        totalKwh: Math.round(totalKwh * 100) / 100,
-        fastCount,
-        slowCount,
-        avgBatteryGain: avgBatteryGain ? Math.round(avgBatteryGain) : null,
+        month: stats.month,
+        sessions: stats.totalSessions,
+        totalCost: stats.totalCost,
+        totalKwh: stats.totalKwh,
+        fastCount: stats.fastCount,
+        slowCount: stats.slowCount,
+        avgBatteryGain,
       }
     })
 
@@ -86,8 +67,6 @@ export default defineEventHandler(async (event) => {
   const totalSessions = logs.length
   const firstDate = new Date(logs[logs.length - 1].start_at as any).toISOString().slice(0, 10)
   const lastDate = new Date(logs[0].start_at as any).toISOString().slice(0, 10)
-
-  // 取得最新里程
   const latestOdometer = logs.find(l => l.odometer)?.odometer || null
 
   const dataContext = JSON.stringify({
@@ -134,7 +113,6 @@ ${dataContext}`
       throw createError({ statusCode: 500, statusMessage: 'Gemini 回應為空' })
     }
 
-    // 儲存分析紀錄
     await db.insert(aiAnalyses).values({
       analysis: text,
       data_context: dataContext,

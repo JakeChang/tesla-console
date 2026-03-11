@@ -1,6 +1,7 @@
 import { getDb } from '~~/server/database/db'
 import { vehicles } from '~~/server/database/schema'
 import { eq } from 'drizzle-orm'
+import { TESLA_API_BASE } from './constants'
 
 /**
  * 取得第一台車輛的 DB 記錄。
@@ -16,7 +17,7 @@ export async function getOrFetchFirstVehicle(accessToken: string | null) {
   if (!accessToken) return null
 
   try {
-    const response = await $fetch<any>('https://fleet-api.prd.na.vn.cloud.tesla.com/api/1/vehicles', {
+    const response = await $fetch<any>(`${TESLA_API_BASE}/vehicles`, {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       timeout: 15000,
     })

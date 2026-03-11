@@ -2,6 +2,7 @@ export interface SessionStatus {
   authenticated: boolean
   hasTeslaToken: boolean
   teslaTokenValid: boolean
+  teslaTokenExpired: boolean
 }
 
 export class AuthService {
@@ -22,7 +23,7 @@ export class AuthService {
     try {
       return await $fetch<SessionStatus>('/api/auth/session')
     } catch {
-      return { authenticated: false, hasTeslaToken: false, teslaTokenValid: false }
+      return { authenticated: false, hasTeslaToken: false, teslaTokenValid: false, teslaTokenExpired: false }
     }
   }
 

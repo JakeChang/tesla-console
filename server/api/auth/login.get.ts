@@ -1,7 +1,9 @@
+import { TESLA_AUTH_URL } from '~~/server/utils/constants'
+
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
 
-  const authUrl = new URL(config.teslaAuthUrl)
+  const authUrl = new URL(TESLA_AUTH_URL)
   const params = new URLSearchParams({
     client_id: config.teslaClientId,
     response_type: 'code',

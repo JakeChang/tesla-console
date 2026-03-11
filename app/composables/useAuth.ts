@@ -2,7 +2,7 @@ import { AuthService } from '~/services/authService'
 import type { SessionStatus } from '~/services/authService'
 
 export const useAuth = () => {
-  const session = ref<SessionStatus>({ authenticated: false, hasTeslaToken: false, teslaTokenValid: false })
+  const session = ref<SessionStatus>({ authenticated: false, hasTeslaToken: false, teslaTokenValid: false, teslaTokenExpired: false })
   const isLoading = ref(false)
   const error = ref<string>('')
 
@@ -17,7 +17,7 @@ export const useAuth = () => {
 
     try {
       const result = await AuthService.login(username, password)
-      session.value = { authenticated: true, hasTeslaToken: result.hasTeslaToken, teslaTokenValid: result.hasTeslaToken }
+      session.value = { authenticated: true, hasTeslaToken: result.hasTeslaToken, teslaTokenValid: result.hasTeslaToken, teslaTokenExpired: false }
       return true
     } catch (err: any) {
       error.value = err.data?.message || err.statusMessage || '登入失敗'
@@ -29,7 +29,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     await AuthService.logout()
-    session.value = { authenticated: false, hasTeslaToken: false, teslaTokenValid: false }
+    session.value = { authenticated: false, hasTeslaToken: false, teslaTokenValid: false, teslaTokenExpired: false }
   }
 
   const linkTesla = async () => {

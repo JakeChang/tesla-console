@@ -1,35 +1,7 @@
 <template>
   <div v-if="!authChecked" class="min-h-screen bg-black"></div>
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
-    <!-- Header -->
-    <div class="navbar bg-black fixed top-0 left-0 right-0 z-50 px-4 border-b border-white/10">
-      <div class="navbar-start">
-        <div class="dropdown lg:hidden">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 bg-[#111111] border border-white/10 rounded-sm w-52 shadow-lg shadow-black/50">
-            <li><NuxtLink to="/" :class="mobileNavClass('/')">儀表板</NuxtLink></li>
-            <li><NuxtLink to="/charging" :class="mobileNavClass('/charging')">充電紀錄</NuxtLink></li>
-            <li><NuxtLink to="/report" :class="mobileNavClass('/report')">充電報表</NuxtLink></li>
-          </ul>
-        </div>
-        <div class="flex items-center ml-2">
-          <span class="text-xl font-light tracking-[0.3em] text-white">TESLA</span>
-          <span class="text-xs text-white/30 ml-3 hidden sm:inline tracking-wider">管理中心</span>
-        </div>
-      </div>
-      <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-1">
-          <li><NuxtLink to="/" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/')">儀表板</NuxtLink></li>
-          <li><NuxtLink to="/charging" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/charging')">充電紀錄</NuxtLink></li>
-          <li><NuxtLink to="/report" class="btn btn-ghost btn-sm tracking-wider text-xs" :class="desktopNavClass('/report')">充電報表</NuxtLink></li>
-        </ul>
-      </div>
-      <div class="navbar-end"></div>
-    </div>
+    <AppHeader />
 
     <!-- Content -->
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
@@ -131,71 +103,14 @@
           </div>
 
           <!-- 統計 -->
-          <div v-if="stats" class="border border-white/10 rounded-sm p-4">
-            <h2 class="text-xs text-white/40 tracking-wider uppercase mb-3">充電統計</h2>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-xs text-white/50">總充電次數</span>
-                <span class="text-sm text-white font-light">{{ stats.totalSessions }} 次</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-xs text-white/50">總花費</span>
-                <span class="text-sm text-white font-light">NT$ {{ stats.totalCost.toLocaleString() }}</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-xs text-white/50">平均每次</span>
-                <span class="text-sm text-white font-light">NT$ {{ stats.avgCost }}</span>
-              </div>
-              <div class="border-t border-white/10 pt-2 flex justify-between items-center">
-                <span class="text-xs text-white/50">快充 / 慢充</span>
-                <span class="text-sm text-white font-light">{{ stats.fastCount }} / {{ stats.slowCount }}</span>
-              </div>
-            </div>
-          </div>
+          <ChargingStats v-if="stats" :stats="stats" />
 
           <!-- 行事曆 -->
-          <div class="border border-white/10 rounded-sm p-4">
-            <div class="flex justify-between items-center mb-3">
-              <button @click="prevMonth" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <span class="text-xs font-light text-white tracking-wider">{{ calendarYear }} 年 {{ calendarMonth }} 月</span>
-              <button @click="nextMonth" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
-            <div class="grid grid-cols-7 gap-1 mb-1">
-              <div v-for="d in ['日','一','二','三','四','五','六']" :key="d" class="text-center text-[10px] text-white/30 py-0.5">{{ d }}</div>
-            </div>
-            <div class="grid grid-cols-7 gap-1">
-              <div v-for="(cell, idx) in calendarCells" :key="idx"
-                class="aspect-square flex flex-col items-center justify-center rounded-sm text-[11px] cursor-pointer transition-colors"
-                :class="cellClass(cell)"
-                @click="cell.day && selectCalendarDate(cell)">
-                <span v-if="cell.day" class="leading-none">{{ cell.day }}</span>
-                <div v-if="cell.charges > 0" class="flex gap-0.5 mt-0.5">
-                  <span v-for="n in Math.min(cell.charges, 3)" :key="n" class="w-1 h-1 rounded-full"
-                    :class="cell.hasFast ? 'bg-[#E31937]' : 'bg-blue-400'"></span>
-                </div>
-              </div>
-            </div>
-            <!-- 選中日期的充電紀錄 -->
-            <div v-if="selectedDateLogs.length > 0" class="mt-3 border-t border-white/10 pt-3 space-y-2">
-              <div class="text-[10px] text-white/40 tracking-wider uppercase">{{ selectedDateStr }} 充電紀錄</div>
-              <div v-for="r in selectedDateLogs" :key="'cal-' + r.id" class="flex items-center gap-2 text-xs py-1">
-                <span class="px-1 py-0.5 rounded-sm border text-[10px] shrink-0"
-                  :class="r.charge_type === 'fast' ? 'border-[#E31937]/30 text-[#E31937]' : 'border-blue-400/30 text-blue-400'">
-                  {{ r.charge_type === 'fast' ? '快' : '慢' }}
-                </span>
-                <span class="text-white/60 flex-1 truncate text-[11px]">{{ r.location || '-' }}</span>
-                <span class="text-white font-light text-[11px] shrink-0">{{ r.cost_ntd != null ? '$' + r.cost_ntd : '' }}</span>
-              </div>
-            </div>
-            <div class="flex gap-3 mt-2 justify-end">
-              <div class="flex items-center gap-1 text-[10px] text-white/30"><span class="w-1.5 h-1.5 rounded-full bg-[#E31937]"></span>快充</div>
-              <div class="flex items-center gap-1 text-[10px] text-white/30"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>慢充</div>
-            </div>
-          </div>
+          <ChargingCalendar
+            :logs="completedLogs"
+            :selected-date="selectedDate"
+            @select="selectedDate = $event"
+          />
         </div>
 
         <!-- 右側：充電紀錄列表 -->
@@ -239,7 +154,7 @@
                       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div>
                           <div class="text-white/40 mb-0.5">日期</div>
-                          <div class="text-white/80">{{ formatDate(log.start_at) }}</div>
+                          <div class="text-white/80">{{ formatDateTime(log.start_at) }}</div>
                         </div>
                         <div>
                           <div class="text-white/40 mb-0.5">電量變化</div>
@@ -277,11 +192,11 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                       <div>
                         <div class="text-white/40 mb-0.5">開始時間</div>
-                        <div class="text-white/80">{{ formatDate(log.start_at) }}</div>
+                        <div class="text-white/80">{{ formatDateTime(log.start_at) }}</div>
                       </div>
                       <div>
                         <div class="text-white/40 mb-0.5">結束時間</div>
-                        <div class="text-white/80">{{ formatDate(log.end_at) }}</div>
+                        <div class="text-white/80">{{ formatDateTime(log.end_at) }}</div>
                       </div>
                       <div>
                         <div class="text-white/40 mb-0.5">里程</div>
@@ -388,11 +303,9 @@
 </template>
 
 <script setup>
-const route = useRoute()
 const { session, checkSession, linkTesla } = useAuth()
+const { formatTime, formatDateTime, formatDuration } = useFormatters()
 
-const mobileNavClass = (path) => route.path === path ? 'text-white font-medium' : ''
-const desktopNavClass = (path) => route.path === path ? 'text-white border-b-2 border-[#E31937] rounded-none' : 'text-white/50 hover:text-white'
 const authChecked = ref(false)
 const sessionData = computed(() => session.value)
 
@@ -421,84 +334,10 @@ const expandedId = ref(null)
 const deleteModal = ref(null)
 const deleteTargetId = ref(null)
 
-// 行事曆狀態
-const now = new Date()
-const calendarYear = ref(now.getFullYear())
-const calendarMonth = ref(now.getMonth() + 1)
+// 行事曆篩選
 const selectedDate = ref(null)
 
 const completedLogs = computed(() => logs.value.filter(l => l.completed))
-
-// 根據行事曆選取篩選顯示的紀錄
-const displayLogs = computed(() => {
-  if (!selectedDate.value) return completedLogs.value
-  return selectedDateLogs.value
-})
-
-// 行事曆：建立每日充電索引
-const chargeDateMap = computed(() => {
-  const map = new Map()
-  for (const log of completedLogs.value) {
-    const d = new Date(log.start_at)
-    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-    if (!map.has(key)) map.set(key, [])
-    map.get(key).push(log)
-  }
-  return map
-})
-
-const calendarCells = computed(() => {
-  const y = calendarYear.value
-  const m = calendarMonth.value
-  const firstDay = new Date(y, m - 1, 1).getDay()
-  const daysInMonth = new Date(y, m, 0).getDate()
-  const cells = []
-  for (let i = 0; i < firstDay; i++) {
-    cells.push({ day: null, charges: 0, hasFast: false })
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const key = `${y}-${m}-${d}`
-    const dayLogs = chargeDateMap.value.get(key) || []
-    cells.push({
-      day: d,
-      charges: dayLogs.length,
-      hasFast: dayLogs.some(l => l.charge_type === 'fast'),
-      hasSlow: dayLogs.some(l => l.charge_type === 'slow'),
-    })
-  }
-  return cells
-})
-
-const cellClass = (cell) => {
-  if (!cell.day) return 'text-transparent'
-  const isSelected = selectedDate.value &&
-    selectedDate.value.year === calendarYear.value &&
-    selectedDate.value.month === calendarMonth.value &&
-    selectedDate.value.day === cell.day
-  const isToday = cell.day === now.getDate() &&
-    calendarMonth.value === now.getMonth() + 1 &&
-    calendarYear.value === now.getFullYear()
-  if (isSelected) return 'bg-[#E31937]/20 text-white border border-[#E31937]/50'
-  if (cell.charges > 0) return 'bg-white/5 text-white/80 hover:bg-white/10'
-  if (isToday) return 'text-[#E31937] hover:bg-white/5'
-  return 'text-white/40 hover:bg-white/5'
-}
-
-const prevMonth = () => {
-  calendarMonth.value === 1 ? (calendarMonth.value = 12, calendarYear.value--) : calendarMonth.value--
-}
-const nextMonth = () => {
-  calendarMonth.value === 12 ? (calendarMonth.value = 1, calendarYear.value++) : calendarMonth.value++
-}
-
-const selectCalendarDate = (cell) => {
-  if (!cell.day) return
-  const isSame = selectedDate.value &&
-    selectedDate.value.year === calendarYear.value &&
-    selectedDate.value.month === calendarMonth.value &&
-    selectedDate.value.day === cell.day
-  selectedDate.value = isSame ? null : { year: calendarYear.value, month: calendarMonth.value, day: cell.day }
-}
 
 const selectedDateStr = computed(() => {
   if (!selectedDate.value) return ''
@@ -508,7 +347,19 @@ const selectedDateStr = computed(() => {
 const selectedDateLogs = computed(() => {
   if (!selectedDate.value) return []
   const key = `${selectedDate.value.year}-${selectedDate.value.month}-${selectedDate.value.day}`
-  return chargeDateMap.value.get(key) || []
+  const map = new Map()
+  for (const log of completedLogs.value) {
+    const d = new Date(log.start_at)
+    const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+    if (!map.has(k)) map.set(k, [])
+    map.get(k).push(log)
+  }
+  return map.get(key) || []
+})
+
+const displayLogs = computed(() => {
+  if (!selectedDate.value) return completedLogs.value
+  return selectedDateLogs.value
 })
 
 const elapsedTime = computed(() => {
@@ -648,6 +499,8 @@ const parseRaw = (raw) => {
   try { return JSON.parse(raw) } catch { return null }
 }
 
+const MILES_TO_KM = 1.60934
+
 const sectionNameMap = {
   charge_state: '充電狀態', vehicle_state: '車輛狀態', climate_state: '空調狀態',
   drive_state: '行駛狀態', vehicle_config: '車輛配置', gui_settings: '顯示設定',
@@ -658,32 +511,11 @@ const formatFieldName = (key) => key.replace(/_/g, ' ')
 const formatFieldValue = (key, val) => {
   if (typeof val === 'boolean') return val ? 'Yes' : 'No'
   if (typeof val === 'number' && (key.includes('range') || key.includes('miles') || key === 'odometer'))
-    return (val * 1.60934).toFixed(1) + ' km'
+    return (val * MILES_TO_KM).toFixed(1) + ' km'
   if (typeof val === 'number' && key.includes('timestamp'))
     return new Date(val * 1000).toLocaleString('zh-TW')
   if (typeof val === 'number' && !Number.isInteger(val))
     return val.toFixed(2)
   return String(val)
-}
-
-// --- 格式化 ---
-const formatTime = (timestamp) => {
-  if (!timestamp) return '-'
-  return new Date(timestamp).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-}
-
-const formatDate = (timestamp) => {
-  if (!timestamp) return '-'
-  return new Date(timestamp).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-}
-
-const formatDuration = (start, end) => {
-  if (!start || !end) return '-'
-  const ms = new Date(end).getTime() - new Date(start).getTime()
-  if (ms < 0) return '-'
-  const hours = Math.floor(ms / 3600000)
-  const minutes = Math.floor((ms % 3600000) / 60000)
-  if (hours > 0) return `${hours} 小時 ${minutes} 分`
-  return `${minutes} 分鐘`
 }
 </script>

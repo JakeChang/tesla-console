@@ -1,6 +1,7 @@
 import { getDb } from '~~/server/database/db'
 import { tokens } from '~~/server/database/schema'
 import { getOrFetchFirstVehicle } from '~~/server/utils/vehicle'
+import { TESLA_TOKEN_URL } from '~~/server/utils/constants'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -16,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const tokenResponse = await $fetch(config.teslaTokenUrl, {
+    const tokenResponse = await $fetch(TESLA_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

@@ -1,6 +1,7 @@
 import { getDb } from '~~/server/database/db'
 import { tokens } from '~~/server/database/schema'
 import { desc } from 'drizzle-orm'
+import { TESLA_TOKEN_URL } from './constants'
 
 export async function getValidTeslaToken(): Promise<string | null> {
   const db = getDb()
@@ -20,7 +21,7 @@ export async function getValidTeslaToken(): Promise<string | null> {
   console.log('[TeslaToken] Token 已過期，嘗試自動刷新...')
   try {
     const config = useRuntimeConfig()
-    const tokenResponse = await $fetch(config.teslaTokenUrl, {
+    const tokenResponse = await $fetch(TESLA_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

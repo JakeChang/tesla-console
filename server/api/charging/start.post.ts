@@ -1,14 +1,13 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs } from '~~/server/database/schema'
 import { eq } from 'drizzle-orm'
-import { validateSession } from '~~/server/utils/session'
+import { requireAuth } from '~~/server/utils/auth'
 import { getValidTeslaToken } from '~~/server/utils/tesla-token'
 import { getOrFetchFirstVehicle } from '~~/server/utils/vehicle'
+import { fetchVehicleData } from '~~/server/utils/tesla-api'
 
 export default defineEventHandler(async (event) => {
-  if (!await validateSession(event)) {
-    throw createError({ statusCode: 401, statusMessage: '請先登入' })
-  }
+  await requireAuth(event)
 
   const body = await readBody(event)
   const { location, charge_type = 'fast' } = body || {}
@@ -38,19 +37,10 @@ export default defineEventHandler(async (event) => {
 
   if (accessToken && vehicle) {
     try {
-      const response = await $fetch<any>(
-        `https://fleet-api.prd.na.vn.cloud.tesla.com/api/1/vehicles/${vehicle.tesla_id}/vehicle_data`,
-        {
-          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          timeout: 15000,
-        }
-      )
-      const data = response.response
-      if (data) {
-        batteryLevel = data.charge_state?.battery_level ?? null
-        odometer = data.vehicle_state?.odometer ? data.vehicle_state.odometer * 1.60934 : null
-        rawData = JSON.stringify(data)
-      }
+      const data = await fetchVehicleData(accessToken, vehicle.tesla_id)
+      batteryLevel = data.batteryLevel
+      odometer = data.odometer
+      rawData = data.raw
     } catch (err: any) {
       console.warn('[Charging] Tesla API 取得車輛資料失敗:', err.message)
     }
