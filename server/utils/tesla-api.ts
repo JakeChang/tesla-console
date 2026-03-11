@@ -74,7 +74,6 @@ export async function fetchVehicleSnapshot(accessToken: string, teslaId: number)
     `${TESLA_API_BASE}/vehicles/${teslaId}/vehicle_data`,
     {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      query: { endpoints: 'charge_state;drive_state;vehicle_state;location_data' },
       timeout: 15000,
     }
   )
