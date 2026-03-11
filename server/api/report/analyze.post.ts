@@ -7,7 +7,7 @@ import { groupByMonth, calcMonthStats } from '~~/server/utils/charging-stats'
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   if (!config.geminiApiKey) {
     throw createError({ statusCode: 500, statusMessage: '未設定 Gemini API Key' })
   }

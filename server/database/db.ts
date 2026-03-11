@@ -7,8 +7,8 @@ let _db: ReturnType<typeof drizzle> | null = null
 let _client: ReturnType<typeof createClient> | null = null
 let _initPromise: Promise<void> | null = null
 
-function _initDb() {
-  const config = useRuntimeConfig()
+function _initDb(event?: any) {
+  const config = useRuntimeConfig(event)
 
   _client = createClient({
     url: config.tursoDbUrl || 'file:data/tesla.db',
@@ -25,15 +25,15 @@ function _initDb() {
   })
 }
 
-export async function ensureDb() {
-  if (!_db) _initDb()
+export async function ensureDb(event?: any) {
+  if (!_db) _initDb(event)
   if (_initPromise) {
     await _initPromise
     _initPromise = null
   }
 }
 
-export function getDb() {
-  if (!_db) _initDb()
+export function getDb(event?: any) {
+  if (!_db) _initDb(event)
   return _db!
 }

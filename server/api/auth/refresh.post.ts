@@ -3,7 +3,7 @@ import { tokens } from '~~/server/database/schema'
 import { TESLA_TOKEN_URL } from '~~/server/utils/constants'
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const body = await readBody(event)
 
   const refreshToken = body?.refresh_token

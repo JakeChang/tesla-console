@@ -9,7 +9,7 @@ import { jsonRpcResponse, jsonRpcError } from '~~/server/mcp/protocol'
  */
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const mcpApiKey = config.mcpApiKey
 
   // Bearer token 驗證

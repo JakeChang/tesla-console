@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   let tokenExpired = false
 
   if (hasToken) {
-    const token = await getValidTeslaToken()
+    const token = await getValidTeslaToken(event)
     tokenValid = !!token
     // 有 token 但無法取得有效的 → 代表已過期且 refresh 失敗
     if (!tokenValid) {

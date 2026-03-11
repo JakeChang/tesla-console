@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   let vehicleId: number | null = null
   let rawData: string | null = null
 
-  const accessToken = await getValidTeslaToken()
+  const accessToken = await getValidTeslaToken(event)
   const vehicle = await getOrFetchFirstVehicle(accessToken)
 
   if (vehicle) {

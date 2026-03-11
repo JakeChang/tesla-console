@@ -7,7 +7,7 @@ import type { H3Event } from 'h3'
 const COOKIE_NAME = 'tesla_session'
 
 export async function createSession(event: H3Event): Promise<string> {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const db = getDb()
   const sessionToken = randomUUID()
   const maxAgeDays = parseInt(config.sessionMaxAgeDays as string) || 30

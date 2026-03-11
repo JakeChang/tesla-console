@@ -4,7 +4,7 @@ import { getOrFetchFirstVehicle } from '~~/server/utils/vehicle'
 import { TESLA_TOKEN_URL } from '~~/server/utils/constants'
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const query = getQuery(event)
 
   const code = query.code as string
