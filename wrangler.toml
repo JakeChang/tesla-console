@@ -1,15 +1,10 @@
-name = "tesla-console2"
+name = "tesla-console"
 main = ".output/server/index.mjs"
 compatibility_date = "2025-07-15"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = ".output/public"
-
-# 自訂網域
-routes = [
-  { pattern = "tesla.jkone.dev", custom_domain = true }
-]
 
 # 每 2 分鐘執行一次車輛追蹤（動態間隔由程式邏輯控制）
 [triggers]
@@ -18,7 +13,7 @@ crons = ["*/2 * * * *"]
 [vars]
 NUXT_ADMIN_USERNAME = "admin"
 NUXT_SESSION_MAX_AGE_DAYS = "30"
-NUXT_PUBLIC_TESLA_REDIRECT_URI = "https://tesla.jkone.dev/auth/callback"
+NUXT_PUBLIC_TESLA_REDIRECT_URI = "https://tesla-console.cloud141.workers.dev/auth/callback"
 
 # 敏感變數請用 wrangler secret put 設定，不要寫在這裡：
 # npx wrangler secret put NUXT_ADMIN_PASSWORD
