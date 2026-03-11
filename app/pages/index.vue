@@ -71,7 +71,12 @@
               </div>
             </div>
           </div>
-          <div v-else class="text-2xl font-light text-white/30 mt-2">{{ sessionData.hasTeslaToken ? '載入中...' : '尚未綁定' }}</div>
+          <div v-else-if="!sessionData.hasTeslaToken" class="text-2xl font-light text-white/30 mt-2">尚未綁定</div>
+          <div v-else class="mt-2 space-y-2">
+            <div class="skeleton h-8 w-32 bg-white/5"></div>
+            <div class="flex justify-between"><div class="skeleton h-4 w-10 bg-white/5"></div><div class="skeleton h-4 w-40 bg-white/5"></div></div>
+            <div class="flex justify-between"><div class="skeleton h-4 w-10 bg-white/5"></div><div class="skeleton h-4 w-16 bg-white/5"></div></div>
+          </div>
         </div>
 
         <!-- 車輛追蹤 -->
@@ -95,7 +100,11 @@
               <span class="text-white/80">{{ chargingStats.fastCount }} / {{ chargingStats.slowCount }}</span>
             </div>
           </div>
-          <div v-else class="text-2xl font-light text-white/30">-</div>
+          <div v-else class="space-y-2">
+            <div class="skeleton h-8 w-24 bg-white/5"></div>
+            <div class="flex justify-between"><div class="skeleton h-4 w-12 bg-white/5"></div><div class="skeleton h-4 w-20 bg-white/5"></div></div>
+            <div class="flex justify-between"><div class="skeleton h-4 w-16 bg-white/5"></div><div class="skeleton h-4 w-14 bg-white/5"></div></div>
+          </div>
           <div class="text-xs text-white/30 mt-3">點擊查看詳細紀錄 &rarr;</div>
         </NuxtLink>
       </div>

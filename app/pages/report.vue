@@ -10,8 +10,29 @@
         <p class="text-white/40 text-sm mt-1">每月充電統計與趨勢分析</p>
       </div>
 
-      <div v-if="isLoading" class="flex justify-center py-20">
-        <span class="loading loading-spinner loading-lg text-[#E31937]"></span>
+      <div v-if="isLoading" class="space-y-8">
+        <!-- 總覽 skeleton -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div v-for="i in 4" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
+            <div class="skeleton h-3 w-20 bg-white/5"></div>
+            <div class="skeleton h-8 w-28 bg-white/5"></div>
+            <div class="skeleton h-3 w-24 bg-white/5"></div>
+          </div>
+        </div>
+        <!-- AI 分析 skeleton -->
+        <div class="border border-white/10 rounded-sm p-6 space-y-3">
+          <div class="skeleton h-4 w-24 bg-white/5"></div>
+          <div class="skeleton h-3 w-full bg-white/5"></div>
+          <div class="skeleton h-3 w-4/5 bg-white/5"></div>
+          <div class="skeleton h-3 w-3/5 bg-white/5"></div>
+        </div>
+        <!-- 圖表 skeleton -->
+        <div class="border border-white/10 rounded-sm p-6">
+          <div class="skeleton h-3 w-32 bg-white/5 mb-4"></div>
+          <div class="flex items-end gap-2 h-48">
+            <div v-for="i in 7" :key="i" class="flex-1 skeleton bg-white/5" :style="{ height: (30 + Math.random() * 70) + '%' }"></div>
+          </div>
+        </div>
       </div>
 
       <template v-else-if="report">

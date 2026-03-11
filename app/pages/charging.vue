@@ -115,8 +115,19 @@
 
         <!-- 右側：充電紀錄列表 -->
         <div class="lg:col-span-8">
-          <div v-if="isLoading" class="flex justify-center py-20">
-            <span class="loading loading-spinner loading-lg text-[#E31937]"></span>
+          <div v-if="isLoading" class="space-y-3">
+            <div v-for="i in 4" :key="i" class="border border-white/10 rounded-sm p-4 space-y-3">
+              <div class="flex items-center gap-2">
+                <div class="skeleton h-5 w-12 bg-white/5"></div>
+                <div class="skeleton h-4 w-28 bg-white/5"></div>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div v-for="j in 4" :key="j" class="space-y-1">
+                  <div class="skeleton h-3 w-12 bg-white/5"></div>
+                  <div class="skeleton h-4 w-20 bg-white/5"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-else-if="displayLogs.length === 0" class="border border-white/10 rounded-sm">

@@ -9,7 +9,14 @@
 
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
       <!-- 即時狀態 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div v-for="i in 4" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
+          <div class="skeleton h-3 w-16 bg-white/5"></div>
+          <div class="skeleton h-7 w-20 bg-white/5"></div>
+          <div class="skeleton h-3 w-24 bg-white/5"></div>
+        </div>
+      </div>
+      <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">車輛狀態</div>
           <div class="text-xl font-light" :class="stateColor">{{ stateLabel }}</div>
@@ -30,7 +37,13 @@
       </div>
 
       <!-- 成本分析 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" v-if="stats">
+      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div v-for="i in 4" :key="'cost-sk-' + i" class="border border-white/10 rounded-sm p-4 space-y-2">
+          <div class="skeleton h-3 w-20 bg-white/5"></div>
+          <div class="skeleton h-7 w-16 bg-white/5"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" v-else-if="stats">
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">每公里電費</div>
           <div class="text-xl font-light text-[#E31937]">{{ stats.costPerKm ?? '-' }}<span class="text-sm text-white/40"> 元</span></div>
@@ -50,7 +63,13 @@
       </div>
 
       <!-- 耗電分析 -->
-      <div class="grid grid-cols-3 gap-4 mb-6" v-if="stats?.batteryDrain">
+      <div v-if="isLoading" class="grid grid-cols-3 gap-4 mb-6">
+        <div v-for="i in 3" :key="'drain-sk-' + i" class="border border-white/10 rounded-sm p-4 space-y-2">
+          <div class="skeleton h-3 w-16 bg-white/5"></div>
+          <div class="skeleton h-7 w-12 bg-white/5"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mb-6" v-else-if="stats?.batteryDrain">
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">行駛耗電</div>
           <div class="text-xl font-light text-blue-400">{{ stats.batteryDrain.driving }}<span class="text-sm text-white/40">%</span></div>
@@ -157,6 +176,7 @@ const { session, checkSession } = useAuth()
 const { formatDateTime } = useFormatters()
 
 const authChecked = ref(false)
+const isLoading = ref(true)
 const snapshots = ref([])
 const latest = ref(null)
 const cronInfo = ref(null)
@@ -314,17 +334,21 @@ onMounted(async () => {
   authChecked.value = true
 
   // 載入資料
-  const [latestData, statsData] = await Promise.all([
-    $fetch('/api/tracking/latest').catch(() => null),
-    $fetch('/api/tracking/stats').catch(() => null),
-  ])
+  try {
+    const [latestData, statsData] = await Promise.all([
+      $fetch('/api/tracking/latest').catch(() => null),
+      $fetch('/api/tracking/stats').catch(() => null),
+    ])
 
-  if (latestData) {
-    latest.value = latestData.snapshot
-    cronInfo.value = latestData.cronState
+    if (latestData) {
+      latest.value = latestData.snapshot
+      cronInfo.value = latestData.cronState
+    }
+    stats.value = statsData
+
+    await loadSnapshots(0)
+  } finally {
+    isLoading.value = false
   }
-  stats.value = statsData
-
-  await loadSnapshots(0)
 })
 </script>
