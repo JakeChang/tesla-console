@@ -74,8 +74,15 @@
           <div v-else class="text-2xl font-light text-white/30 mt-2">{{ sessionData.hasTeslaToken ? '載入中...' : '尚未綁定' }}</div>
         </div>
 
+        <!-- 車輛追蹤 -->
+        <NuxtLink to="/tracking" class="border border-white/10 rounded-sm p-6 hover:border-white/20 transition-colors block">
+          <div class="text-xs text-white/40 tracking-wider uppercase mb-2">車輛追蹤</div>
+          <div class="text-2xl font-light text-white">軌跡 & 能耗</div>
+          <div class="text-xs text-white/30 mt-3">即時位置、軌跡地圖、里程成本 &rarr;</div>
+        </NuxtLink>
+
         <!-- 充電紀錄快捷 -->
-        <NuxtLink to="/charging" class="border border-white/10 rounded-sm p-6 hover:border-white/20 transition-colors block md:col-span-2">
+        <NuxtLink to="/charging" class="border border-white/10 rounded-sm p-6 hover:border-white/20 transition-colors block">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-2">充電紀錄</div>
           <div v-if="chargingStats" class="space-y-2">
             <div class="text-2xl font-light text-white">{{ chargingStats.totalSessions }} <span class="text-sm text-white/40">次充電</span></div>

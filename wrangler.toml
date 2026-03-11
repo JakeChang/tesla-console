@@ -6,6 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".output/public"
 
+# 每 2 分鐘執行一次車輛追蹤（動態間隔由程式邏輯控制）
+[triggers]
+crons = ["*/2 * * * *"]
+
 [vars]
 NUXT_ADMIN_USERNAME = "admin"
 NUXT_SESSION_MAX_AGE_DAYS = "30"

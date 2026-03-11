@@ -15,8 +15,10 @@
   "dependencies": {
     "@libsql/client": "^0.17.0",
     "drizzle-orm": "^0.45.1",
+    "leaflet": "^1.9.4",
     "marked": "^17.0.4",
     "nuxt": "^3.17.0",
+    "nuxt-leaflet": "^0.0.27",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },
