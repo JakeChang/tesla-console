@@ -1,0 +1,19 @@
+name = "tesla-console2"
+main = ".output/server/index.mjs"
+compatibility_date = "2025-07-15"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NUXT_ADMIN_USERNAME = "admin"
+NUXT_SESSION_MAX_AGE_DAYS = "30"
+NUXT_PUBLIC_TESLA_REDIRECT_URI = "https://tesla-console2.cloud141.workers.dev/auth/callback"
+
+# 敏感變數請用 wrangler secret put 設定，不要寫在這裡：
+# npx wrangler secret put NUXT_ADMIN_PASSWORD
+# npx wrangler secret put NUXT_TESLA_CLIENT_ID
+# npx wrangler secret put NUXT_TESLA_CLIENT_SECRET
+# npx wrangler secret put NUXT_TESLA_REDIRECT_URI
+# npx wrangler secret put NUXT_TURSO_DB_URL
+# npx wrangler secret put NUXT_TURSO_AUTH_TOKEN
+# npx wrangler secret put NUXT_GEMINI_API_KEY
+# npx wrangler secret put NUXT_MCP_API_KEY

@@ -5,6 +5,9 @@ export default defineNuxtConfig({
   srcDir: 'app/',
   serverDir: 'server/',
   devtools: { enabled: true },
+  nitro: {
+    preset: 'cloudflare-module',
+  },
   vite: {
     plugins: [tailwindcss()],
     server: {
