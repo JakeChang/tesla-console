@@ -124,8 +124,10 @@ export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
     return
   }
 
-  // 根據上次狀態和時間判斷是否需要呼叫詳細 API
-  if (!shouldPoll(state?.last_state || currentState, state?.last_poll_at || null)) {
+  // 根據「目前」狀態和時間判斷是否需要呼叫詳細 API
+  // 注意：必須使用 currentState（車輛列表即時狀態），而非 last_state（DB 舊狀態）
+  // 否則從 asleep 醒來時，last_state 仍為 "asleep"（interval=Infinity）→ 永遠不再輪詢
+  if (!shouldPoll(currentState, state?.last_poll_at || null)) {
     console.log(`[Tracker] 車輛狀態: ${currentState}，尚未到輪詢間隔，跳過`)
     return
   }

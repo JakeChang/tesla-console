@@ -325,15 +325,10 @@ function formatTime(date) {
   return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-onMounted(async () => {
-  const status = await checkSession()
-  if (!status.authenticated) {
-    await navigateTo('/auth/login')
-    return
-  }
-  authChecked.value = true
+// 自動重新整理（每 30 秒）
+let refreshTimer = null
 
-  // 載入資料
+async function refreshData() {
   try {
     const [latestData, statsData] = await Promise.all([
       $fetch('/api/tracking/latest').catch(() => null),
@@ -346,9 +341,37 @@ onMounted(async () => {
     }
     stats.value = statsData
 
-    await loadSnapshots(0)
+    // 重新載入目前篩選的快照
+    const currentOpt = dateOptions.find(o => o.label === activeDateLabel.value)
+    await loadSnapshots(currentOpt?.days ?? 0)
+  } catch (err) {
+    console.error('自動重新整理失敗:', err)
+  }
+}
+
+onMounted(async () => {
+  const status = await checkSession()
+  if (!status.authenticated) {
+    await navigateTo('/auth/login')
+    return
+  }
+  authChecked.value = true
+
+  // 初次載入資料
+  try {
+    await refreshData()
   } finally {
     isLoading.value = false
+  }
+
+  // 啟動自動重新整理
+  refreshTimer = setInterval(refreshData, 30 * 1000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
   }
 })
 </script>
