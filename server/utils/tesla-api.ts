@@ -66,15 +66,17 @@ export async function fetchVehicleList(accessToken: string): Promise<VehicleList
   }))
 }
 
+export type PollMode = 'data' | 'gps'
+
 /**
- * 取得車輛完整快照資料（會喚醒車輛）
+ * 資料模式：取得電量、里程、速度、shift_state（無 GPS）
  */
-export async function fetchVehicleSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
+export async function fetchVehicleDataSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
   const response = await $fetch<any>(
     `${TESLA_API_BASE}/vehicles/${teslaId}/vehicle_data`,
     {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      query: { endpoints: 'location_data;charge_state;drive_state;vehicle_state' },
+      query: { endpoints: 'charge_state;drive_state;vehicle_state' },
       timeout: 15000,
     }
   )
@@ -85,14 +87,43 @@ export async function fetchVehicleSnapshot(accessToken: string, teslaId: number)
   const vehicle = data?.vehicle_state
 
   return {
-    latitude: drive?.latitude ?? null,
-    longitude: drive?.longitude ?? null,
+    latitude: null,
+    longitude: null,
     batteryLevel: charge?.battery_level ?? null,
     odometer: vehicle?.odometer ? vehicle.odometer * MILES_TO_KM : null,
     speed: drive?.speed != null ? drive.speed * MILES_TO_KM : null,
     heading: drive?.heading ?? null,
-    state: data?.state ?? drive?.shift_state ? 'driving' : charge?.charging_state === 'Charging' ? 'charging' : 'online',
+    state: drive?.shift_state === 'D' || drive?.shift_state === 'R' ? 'driving' : charge?.charging_state === 'Charging' ? 'charging' : 'online',
     shiftState: drive?.shift_state ?? null,
+    raw: JSON.stringify(data),
+  }
+}
+
+/**
+ * GPS 模式：取得 GPS 座標（無電量、里程）
+ */
+export async function fetchVehicleGpsSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
+  const response = await $fetch<any>(
+    `${TESLA_API_BASE}/vehicles/${teslaId}/vehicle_data`,
+    {
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      query: { endpoints: 'location_data' },
+      timeout: 15000,
+    }
+  )
+
+  const data = response.response
+  const drive = data?.drive_state
+
+  return {
+    latitude: drive?.latitude ?? null,
+    longitude: drive?.longitude ?? null,
+    batteryLevel: null,
+    odometer: null,
+    speed: null,
+    heading: drive?.heading ?? null,
+    state: 'driving',
+    shiftState: null,
     raw: JSON.stringify(data),
   }
 }

@@ -2,7 +2,8 @@ import { getDb, ensureDb } from '~~/server/database/db'
 import { vehicles, vehicleSnapshots, cronState } from '~~/server/database/schema'
 import { eq } from 'drizzle-orm'
 import { getValidTeslaToken } from './tesla-token'
-import { fetchVehicleList, fetchVehicleSnapshot } from './tesla-api'
+import { fetchVehicleList, fetchVehicleDataSnapshot, fetchVehicleGpsSnapshot } from './tesla-api'
+import type { PollMode } from './tesla-api'
 
 // 動態輪詢間隔（毫秒）
 const INTERVALS: Record<string, number> = {
@@ -22,6 +23,17 @@ function shouldPoll(lastState: string | null, lastPollAt: Date | null): boolean 
   const interval = getInterval(lastState)
   if (interval === Infinity) return false
   return Date.now() - lastPollAt.getTime() >= interval
+}
+
+/**
+ * 決定下一次輪詢模式
+ * - 偵測到 driving → 下次用 gps 模式
+ * - 車輛列表回傳 online 且上次為 driving → 切回 data 模式（停駛）
+ * - 車輛列表回傳 asleep/offline → 切回 data 模式
+ */
+function resolveNextPollMode(currentPollMode: PollMode, detailedState: string): PollMode {
+  if (detailedState === 'driving') return 'gps'
+  return 'data'
 }
 
 interface ScheduledEnv {
@@ -84,20 +96,30 @@ export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
     await db.insert(cronState).values({
       vehicle_id: vehicle.id,
       last_state: currentState,
+      poll_mode: 'data',
       last_check_at: now,
       updated_at: now,
     }).run()
     state = await db.select().from(cronState).where(eq(cronState.vehicle_id, vehicle.id)).get()
   }
 
+  // 車輛列表回傳 online 且上次為 driving → 可能已停駛，強制切回 data 模式確認
+  const pollMode: PollMode = (currentState === 'online' && state?.last_state === 'driving')
+    ? 'data'
+    : (state?.poll_mode as PollMode) || 'data'
+
   // 更新最後檢查時間
   await db.update(cronState)
-    .set({ last_state: currentState, last_check_at: now, updated_at: now })
+    .set({ last_check_at: now, updated_at: now })
     .where(eq(cronState.vehicle_id, vehicle.id))
     .run()
 
-  // 車輛睡眠或離線 → 不呼叫詳細 API
+  // 車輛睡眠或離線 → 不呼叫詳細 API，重設為 data 模式
   if (currentState === 'asleep' || currentState === 'offline') {
+    await db.update(cronState)
+      .set({ last_state: currentState, poll_mode: 'data', updated_at: now })
+      .where(eq(cronState.vehicle_id, vehicle.id))
+      .run()
     console.log(`[Tracker] 車輛狀態: ${currentState}，跳過詳細查詢`)
     return
   }
@@ -108,18 +130,30 @@ export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
     return
   }
 
-  // 呼叫詳細 API（會喚醒車輛）
+  // 根據 poll_mode 呼叫對應的 API
   try {
-    console.log(`[Tracker] 車輛狀態: ${currentState}，開始抓取快照...`)
-    const snapshot = await fetchVehicleSnapshot(accessToken, vehicle.tesla_id)
+    console.log(`[Tracker] 車輛狀態: ${currentState}，模式: ${pollMode}，開始抓取快照...`)
+
+    const snapshot = pollMode === 'gps'
+      ? await fetchVehicleGpsSnapshot(accessToken, vehicle.tesla_id)
+      : await fetchVehicleDataSnapshot(accessToken, vehicle.tesla_id)
 
     // 判斷更精確的狀態
     let detailedState = currentState
-    if (snapshot.shiftState === 'D' || snapshot.shiftState === 'R') {
+    if (pollMode === 'data') {
+      // 資料模式下可以從 shift_state 判斷
+      if (snapshot.shiftState === 'D' || snapshot.shiftState === 'R') {
+        detailedState = 'driving'
+      } else if (snapshot.state === 'charging') {
+        detailedState = 'charging'
+      }
+    } else {
+      // GPS 模式下維持 driving 狀態
       detailedState = 'driving'
-    } else if (snapshot.state === 'charging') {
-      detailedState = 'charging'
     }
+
+    // 決定下一次輪詢模式
+    const nextPollMode = resolveNextPollMode(pollMode, detailedState)
 
     // 存入快照
     await db.insert(vehicleSnapshots).values({
@@ -138,11 +172,11 @@ export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
 
     // 更新 cron 狀態
     await db.update(cronState)
-      .set({ last_state: detailedState, last_poll_at: now, updated_at: now })
+      .set({ last_state: detailedState, poll_mode: nextPollMode, last_poll_at: now, updated_at: now })
       .where(eq(cronState.vehicle_id, vehicle.id))
       .run()
 
-    console.log(`[Tracker] 快照已儲存: ${detailedState}, 電量 ${snapshot.batteryLevel}%, 里程 ${snapshot.odometer?.toFixed(1)}km`)
+    console.log(`[Tracker] 快照已儲存: ${detailedState} [${pollMode}→${nextPollMode}], 電量 ${snapshot.batteryLevel ?? '-'}%, 里程 ${snapshot.odometer?.toFixed(1) ?? '-'}km, GPS ${snapshot.latitude ?? '-'},${snapshot.longitude ?? '-'}`)
   } catch (err: any) {
     console.error('[Tracker] 車輛快照 API 失敗:', err.message)
   }

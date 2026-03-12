@@ -62,6 +62,7 @@ export const cronState = sqliteTable('cron_state', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   vehicle_id: integer('vehicle_id').references(() => vehicles.id).notNull().unique(),
   last_state: text('last_state'),
+  poll_mode: text('poll_mode').notNull().default('data'), // 'data' | 'gps'
   last_poll_at: integer('last_poll_at', { mode: 'timestamp' }),
   last_check_at: integer('last_check_at', { mode: 'timestamp' }),
   updated_at: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
