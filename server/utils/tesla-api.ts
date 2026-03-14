@@ -66,10 +66,8 @@ export async function fetchVehicleList(accessToken: string): Promise<VehicleList
   }))
 }
 
-export type PollMode = 'data' | 'gps'
-
 /**
- * 資料模式：取得電量、里程、速度、shift_state（無 GPS）
+ * 資料模式：取得電量、里程、速度（無 GPS）
  */
 export async function fetchVehicleDataSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
   const response = await $fetch<any>(
@@ -93,7 +91,7 @@ export async function fetchVehicleDataSnapshot(accessToken: string, teslaId: num
     odometer: vehicle?.odometer ? vehicle.odometer * MILES_TO_KM : null,
     speed: drive?.speed != null ? drive.speed * MILES_TO_KM : null,
     heading: drive?.heading ?? null,
-    state: drive?.shift_state === 'D' || drive?.shift_state === 'R' ? 'driving' : charge?.charging_state === 'Charging' ? 'charging' : 'online',
+    state: charge?.charging_state === 'Charging' ? 'charging' : 'online',
     shiftState: drive?.shift_state ?? null,
     raw: JSON.stringify(data),
   }
