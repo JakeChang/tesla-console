@@ -12,12 +12,8 @@ export default defineEventHandler(async (event) => {
     id: vehicleSnapshots.id,
     latitude: vehicleSnapshots.latitude,
     longitude: vehicleSnapshots.longitude,
-    battery_level: vehicleSnapshots.battery_level,
-    odometer: vehicleSnapshots.odometer,
-    speed: vehicleSnapshots.speed,
     heading: vehicleSnapshots.heading,
     state: vehicleSnapshots.state,
-    shift_state: vehicleSnapshots.shift_state,
     created_at: vehicleSnapshots.created_at,
   })
     .from(vehicleSnapshots)
@@ -31,7 +27,6 @@ export default defineEventHandler(async (event) => {
     snapshot: latest || null,
     cronState: cron ? {
       lastState: cron.last_state,
-      lastPollAt: cron.last_poll_at,
       lastCheckAt: cron.last_check_at,
     } : null,
   }

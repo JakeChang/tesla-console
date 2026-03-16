@@ -21,12 +21,8 @@ export default defineEventHandler(async (event) => {
     id: vehicleSnapshots.id,
     latitude: vehicleSnapshots.latitude,
     longitude: vehicleSnapshots.longitude,
-    battery_level: vehicleSnapshots.battery_level,
-    odometer: vehicleSnapshots.odometer,
-    speed: vehicleSnapshots.speed,
     heading: vehicleSnapshots.heading,
     state: vehicleSnapshots.state,
-    shift_state: vehicleSnapshots.shift_state,
     created_at: vehicleSnapshots.created_at,
   })
     .from(vehicleSnapshots)

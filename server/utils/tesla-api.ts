@@ -13,15 +13,10 @@ export interface VehicleListItem {
   state: string // 'online', 'asleep', 'offline'
 }
 
-export interface VehicleSnapshot {
+export interface VehicleGpsSnapshot {
   latitude: number | null
   longitude: number | null
-  batteryLevel: number | null
-  odometer: number | null
-  speed: number | null
   heading: number | null
-  state: string | null
-  shiftState: string | null
   raw: string
 }
 
@@ -67,40 +62,9 @@ export async function fetchVehicleList(accessToken: string): Promise<VehicleList
 }
 
 /**
- * 資料模式：取得電量、里程、速度（無 GPS）
+ * 取得 GPS 座標
  */
-export async function fetchVehicleDataSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
-  const response = await $fetch<any>(
-    `${TESLA_API_BASE}/vehicles/${teslaId}/vehicle_data`,
-    {
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      query: { endpoints: 'charge_state;drive_state;vehicle_state' },
-      timeout: 15000,
-    }
-  )
-
-  const data = response.response
-  const drive = data?.drive_state
-  const charge = data?.charge_state
-  const vehicle = data?.vehicle_state
-
-  return {
-    latitude: null,
-    longitude: null,
-    batteryLevel: charge?.battery_level ?? null,
-    odometer: vehicle?.odometer ? vehicle.odometer * MILES_TO_KM : null,
-    speed: drive?.speed != null ? drive.speed * MILES_TO_KM : null,
-    heading: drive?.heading ?? null,
-    state: charge?.charging_state === 'Charging' ? 'charging' : 'online',
-    shiftState: drive?.shift_state ?? null,
-    raw: JSON.stringify(data),
-  }
-}
-
-/**
- * GPS 模式：取得 GPS 座標（無電量、里程）
- */
-export async function fetchVehicleGpsSnapshot(accessToken: string, teslaId: number): Promise<VehicleSnapshot> {
+export async function fetchVehicleGpsSnapshot(accessToken: string, teslaId: number): Promise<VehicleGpsSnapshot> {
   const response = await $fetch<any>(
     `${TESLA_API_BASE}/vehicles/${teslaId}/vehicle_data`,
     {
@@ -116,12 +80,7 @@ export async function fetchVehicleGpsSnapshot(accessToken: string, teslaId: numb
   return {
     latitude: drive?.latitude ?? null,
     longitude: drive?.longitude ?? null,
-    batteryLevel: null,
-    odometer: null,
-    speed: null,
     heading: drive?.heading ?? null,
-    state: 'driving',
-    shiftState: null,
     raw: JSON.stringify(data),
   }
 }

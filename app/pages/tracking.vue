@@ -9,79 +9,27 @@
 
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
       <!-- 即時狀態 -->
-      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div v-for="i in 4" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
+      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div v-for="i in 3" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
           <div class="skeleton h-3 w-16 bg-white/5"></div>
           <div class="skeleton h-7 w-20 bg-white/5"></div>
-          <div class="skeleton h-3 w-24 bg-white/5"></div>
         </div>
       </div>
-      <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">車輛狀態</div>
           <div class="text-xl font-light" :class="stateColor">{{ stateLabel }}</div>
           <div class="text-xs text-white/30 mt-1">{{ lastUpdateText }}</div>
         </div>
         <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">電量</div>
-          <div class="text-xl font-light text-white">{{ latest?.battery_level ?? '-' }}<span class="text-sm text-white/40">%</span></div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">里程</div>
-          <div class="text-xl font-light text-white">{{ latest?.odometer ? latest.odometer.toFixed(1) : '-' }}<span class="text-sm text-white/40"> km</span></div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">速度</div>
-          <div class="text-xl font-light text-white">{{ latest?.speed ? latest.speed.toFixed(0) : '0' }}<span class="text-sm text-white/40"> km/h</span></div>
-        </div>
-      </div>
-
-      <!-- 成本分析 -->
-      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div v-for="i in 4" :key="'cost-sk-' + i" class="border border-white/10 rounded-sm p-4 space-y-2">
-          <div class="skeleton h-3 w-20 bg-white/5"></div>
-          <div class="skeleton h-7 w-16 bg-white/5"></div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" v-else-if="stats">
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">每公里電費</div>
-          <div class="text-xl font-light text-[#E31937]">{{ stats.costPerKm ?? '-' }}<span class="text-sm text-white/40"> 元</span></div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">追蹤里程</div>
-          <div class="text-xl font-light text-white">{{ stats.totalKm ?? '-' }}<span class="text-sm text-white/40"> km</span></div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">總充電費</div>
-          <div class="text-xl font-light text-white">{{ stats.totalChargingCost?.toLocaleString() ?? '-' }}<span class="text-sm text-white/40"> 元</span></div>
+          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">目前位置</div>
+          <div class="text-lg font-light text-white font-mono">
+            {{ latest?.latitude?.toFixed(4) ?? '-' }}, {{ latest?.longitude?.toFixed(4) ?? '-' }}
+          </div>
         </div>
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">快照數</div>
-          <div class="text-xl font-light text-white">{{ stats.snapshotCount ?? '-' }}</div>
-        </div>
-      </div>
-
-      <!-- 耗電分析 -->
-      <div v-if="isLoading" class="grid grid-cols-3 gap-4 mb-6">
-        <div v-for="i in 3" :key="'drain-sk-' + i" class="border border-white/10 rounded-sm p-4 space-y-2">
-          <div class="skeleton h-3 w-16 bg-white/5"></div>
-          <div class="skeleton h-7 w-12 bg-white/5"></div>
-        </div>
-      </div>
-      <div class="grid grid-cols-3 gap-4 mb-6" v-else-if="stats?.batteryDrain">
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">行駛耗電</div>
-          <div class="text-xl font-light text-blue-400">{{ stats.batteryDrain.driving }}<span class="text-sm text-white/40">%</span></div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">待機耗電</div>
-          <div class="text-xl font-light text-yellow-400">{{ stats.batteryDrain.idle }}<span class="text-sm text-white/40">%</span></div>
-          <div class="text-xs text-white/30 mt-1">衛兵、冷氣等</div>
-        </div>
-        <div class="border border-white/10 rounded-sm p-4">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-1">充電回充</div>
-          <div class="text-xl font-light text-green-400">+{{ stats.batteryDrain.chargingGain }}<span class="text-sm text-white/40">%</span></div>
+          <div class="text-xl font-light text-white">{{ snapshots.length }}</div>
         </div>
       </div>
 
@@ -103,41 +51,6 @@
         <TrackingMap :points="trackPoints" :center="mapCenter" :zoom="mapZoom" />
       </div>
 
-      <!-- 電量變化圖表 -->
-      <div class="border border-white/10 rounded-sm p-6 mb-6">
-        <div class="text-xs text-white/40 tracking-wider uppercase mb-4">電量變化</div>
-        <div v-if="snapshots.length > 0" class="relative" style="height: 200px;">
-          <svg viewBox="0 0 800 200" class="w-full h-full" preserveAspectRatio="none">
-            <!-- 格線 -->
-            <line v-for="y in [0, 25, 50, 75, 100]" :key="y"
-              x1="0" :y1="200 - y * 2" x2="800" :y2="200 - y * 2"
-              stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-            <!-- 電量折線 -->
-            <polyline
-              :points="batteryChartPoints"
-              fill="none"
-              stroke="#E31937"
-              stroke-width="2"
-            />
-            <!-- 充電區間背景 -->
-            <rect v-for="(seg, i) in chargingSegments" :key="'cs' + i"
-              :x="seg.x" y="0" :width="seg.w" height="200"
-              fill="rgba(34,197,94,0.1)" />
-            <!-- 行駛區間背景 -->
-            <rect v-for="(seg, i) in drivingSegments" :key="'ds' + i"
-              :x="seg.x" y="0" :width="seg.w" height="200"
-              fill="rgba(59,130,246,0.1)" />
-          </svg>
-          <!-- 圖例 -->
-          <div class="flex gap-4 mt-2 text-xs text-white/40">
-            <span><span class="inline-block w-3 h-2 bg-[#E31937] mr-1 rounded-sm"></span>電量</span>
-            <span><span class="inline-block w-3 h-2 bg-green-500/30 mr-1 rounded-sm"></span>充電中</span>
-            <span><span class="inline-block w-3 h-2 bg-blue-500/30 mr-1 rounded-sm"></span>行駛中</span>
-          </div>
-        </div>
-        <div v-else class="text-center text-white/30 py-8">尚無快照資料</div>
-      </div>
-
       <!-- 最近快照列表 -->
       <div class="border border-white/10 rounded-sm p-6">
         <div class="text-xs text-white/40 tracking-wider uppercase mb-4">最近快照</div>
@@ -147,9 +60,6 @@
               <tr class="border-white/10 text-white/40">
                 <th>時間</th>
                 <th>狀態</th>
-                <th>電量</th>
-                <th>速度</th>
-                <th>里程</th>
                 <th>位置</th>
               </tr>
             </thead>
@@ -157,9 +67,6 @@
               <tr v-for="s in recentSnapshots" :key="s.id" class="border-white/5 text-white/70">
                 <td class="text-xs font-mono">{{ formatTime(s.created_at) }}</td>
                 <td><span class="badge badge-xs" :class="stateBadge(s.state)">{{ s.state }}</span></td>
-                <td>{{ s.battery_level ?? '-' }}%</td>
-                <td>{{ s.speed ? s.speed.toFixed(0) : '0' }} km/h</td>
-                <td>{{ s.odometer ? s.odometer.toFixed(1) : '-' }}</td>
                 <td class="text-xs font-mono">{{ s.latitude?.toFixed(4) }}, {{ s.longitude?.toFixed(4) }}</td>
               </tr>
             </tbody>
@@ -180,7 +87,6 @@ const isLoading = ref(true)
 const snapshots = ref([])
 const latest = ref(null)
 const cronInfo = ref(null)
-const stats = ref(null)
 
 // 日期篩選
 const dateOptions = [
@@ -226,7 +132,7 @@ async function loadSnapshots(days) {
 
 // 地圖
 const mapZoom = ref(13)
-const mapCenter = ref([25.033, 121.565]) // 預設台北
+const mapCenter = ref([25.033, 121.565])
 
 const trackPoints = computed(() => {
   return snapshots.value
@@ -239,52 +145,6 @@ watch(trackPoints, (pts) => {
     mapCenter.value = pts[pts.length - 1]
   }
 })
-
-// 電量圖表
-const batteryChartPoints = computed(() => {
-  if (snapshots.value.length === 0) return ''
-  return snapshots.value
-    .filter(s => s.battery_level != null)
-    .map((s, i, arr) => {
-      const x = (i / Math.max(arr.length - 1, 1)) * 800
-      const y = 200 - (s.battery_level / 100) * 200
-      return `${x},${y}`
-    })
-    .join(' ')
-})
-
-const chargingSegments = computed(() => {
-  return computeSegments('charging')
-})
-
-const drivingSegments = computed(() => {
-  return computeSegments('driving')
-})
-
-function computeSegments(targetState) {
-  const data = snapshots.value.filter(s => s.battery_level != null)
-  if (data.length < 2) return []
-  const segments = []
-  let start = null
-  for (let i = 0; i < data.length; i++) {
-    if (data[i].state === targetState && start === null) {
-      start = i
-    } else if (data[i].state !== targetState && start !== null) {
-      segments.push({
-        x: (start / (data.length - 1)) * 800,
-        w: ((i - start) / (data.length - 1)) * 800,
-      })
-      start = null
-    }
-  }
-  if (start !== null) {
-    segments.push({
-      x: (start / (data.length - 1)) * 800,
-      w: ((data.length - 1 - start) / (data.length - 1)) * 800,
-    })
-  }
-  return segments
-}
 
 // 最近快照
 const recentSnapshots = computed(() => {
@@ -330,18 +190,13 @@ let refreshTimer = null
 
 async function refreshData() {
   try {
-    const [latestData, statsData] = await Promise.all([
-      $fetch('/api/tracking/latest').catch(() => null),
-      $fetch('/api/tracking/stats').catch(() => null),
-    ])
+    const latestData = await $fetch('/api/tracking/latest').catch(() => null)
 
     if (latestData) {
       latest.value = latestData.snapshot
       cronInfo.value = latestData.cronState
     }
-    stats.value = statsData
 
-    // 重新載入目前篩選的快照
     const currentOpt = dateOptions.find(o => o.label === activeDateLabel.value)
     await loadSnapshots(currentOpt?.days ?? 0)
   } catch (err) {
@@ -357,14 +212,12 @@ onMounted(async () => {
   }
   authChecked.value = true
 
-  // 初次載入資料
   try {
     await refreshData()
   } finally {
     isLoading.value = false
   }
 
-  // 啟動自動重新整理
   refreshTimer = setInterval(refreshData, 30 * 1000)
 })
 
