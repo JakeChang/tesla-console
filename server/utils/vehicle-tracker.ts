@@ -36,8 +36,9 @@ interface ScheduledEnv {
  * 由 Cloudflare Cron Trigger 呼叫
  */
 export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
+  const dbUrl = String(env.NUXT_TURSO_DB_URL || '')
   const dbConfig = {
-    tursoDbUrl: String(env.NUXT_TURSO_DB_URL || ''),
+    tursoDbUrl: dbUrl,
     tursoAuthToken: env.NUXT_TURSO_AUTH_TOKEN ? String(env.NUXT_TURSO_AUTH_TOKEN) : undefined,
   }
 
@@ -45,6 +46,9 @@ export async function executePollingCycle(env: ScheduledEnv): Promise<void> {
     teslaClientId: String(env.NUXT_TESLA_CLIENT_ID || ''),
     teslaClientSecret: String(env.NUXT_TESLA_CLIENT_SECRET || ''),
   }
+
+  console.log(`[Tracker] DB URL: ${dbUrl ? dbUrl.substring(0, 20) + '...' : '(空)'}`)
+  console.log(`[Tracker] Tesla Client ID: ${tokenConfig.teslaClientId ? '已設定' : '(空)'}`)
 
   await ensureDb(dbConfig)
   const db = getDb()

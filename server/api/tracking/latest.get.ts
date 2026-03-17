@@ -6,7 +6,7 @@ import { requireAuth } from '~~/server/utils/auth'
 export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
-  const db = getDb(event)
+  const db = getDb()
 
   const latest = await db.select({
     id: vehicleSnapshots.id,
