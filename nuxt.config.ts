@@ -5,6 +5,9 @@ export default defineNuxtConfig({
   srcDir: 'app/',
   serverDir: 'server/',
   devtools: { enabled: true },
+  devServer: {
+    port: 20004,
+  },
   nitro: {
     preset: 'cloudflare-module',
   },
