@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!authChecked" class="min-h-screen bg-black"></div>
+  <PageSkeleton v-if="!pageReady" variant="dashboard" />
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
     <AppHeader>
       <template #end>
@@ -38,7 +38,12 @@
         </div>
 
         <!-- 車輛資訊 -->
-        <div class="border border-white/10 rounded-sm p-6 cursor-pointer hover:border-white/20 transition-colors" @click="vehicleExpanded = !vehicleExpanded">
+        <div class="border border-white/10 rounded-sm p-6 cursor-pointer hover:border-white/20 transition-colors"
+          role="button" tabindex="0"
+          :aria-expanded="vehicleExpanded" aria-label="車輛資訊"
+          @click="vehicleExpanded = !vehicleExpanded"
+          @keydown.enter.prevent="vehicleExpanded = !vehicleExpanded"
+          @keydown.space.prevent="vehicleExpanded = !vehicleExpanded">
           <div class="flex justify-between items-center">
             <div class="text-xs text-white/40 tracking-wider uppercase">車輛資訊</div>
             <svg v-if="vehicleInfo" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/30 transition-transform" :class="{ 'rotate-180': vehicleExpanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -71,12 +76,7 @@
               </div>
             </div>
           </div>
-          <div v-else-if="!sessionData.hasTeslaToken" class="text-2xl font-light text-white/30 mt-2">尚未綁定</div>
-          <div v-else class="mt-2 space-y-2">
-            <div class="skeleton h-8 w-32 bg-white/5"></div>
-            <div class="flex justify-between"><div class="skeleton h-4 w-10 bg-white/5"></div><div class="skeleton h-4 w-40 bg-white/5"></div></div>
-            <div class="flex justify-between"><div class="skeleton h-4 w-10 bg-white/5"></div><div class="skeleton h-4 w-16 bg-white/5"></div></div>
-          </div>
+          <div v-else class="text-2xl font-light text-white/30 mt-2">尚未綁定</div>
         </div>
 
         <!-- 車輛追蹤 -->
@@ -100,11 +100,7 @@
               <span class="text-white/80">{{ chargingStats.fastCount }} / {{ chargingStats.slowCount }}</span>
             </div>
           </div>
-          <div v-else class="space-y-2">
-            <div class="skeleton h-8 w-24 bg-white/5"></div>
-            <div class="flex justify-between"><div class="skeleton h-4 w-12 bg-white/5"></div><div class="skeleton h-4 w-20 bg-white/5"></div></div>
-            <div class="flex justify-between"><div class="skeleton h-4 w-16 bg-white/5"></div><div class="skeleton h-4 w-14 bg-white/5"></div></div>
-          </div>
+          <div v-else class="text-2xl font-light text-white/30 mt-2">尚無紀錄</div>
           <div class="text-xs text-white/30 mt-3">點擊查看詳細紀錄 &rarr;</div>
         </NuxtLink>
       </div>
@@ -116,7 +112,7 @@
 const { session, checkSession, logout, linkTesla } = useAuth()
 const { formatDateTime } = useFormatters()
 
-const authChecked = ref(false)
+const pageReady = ref(false)
 const sessionData = computed(() => session.value)
 const chargingStats = ref(null)
 const vehicleInfo = ref(null)
@@ -133,7 +129,6 @@ onMounted(async () => {
     await navigateTo('/auth/login')
     return
   }
-  authChecked.value = true
 
   try {
     const [chargingData, vehicleData] = await Promise.all([
@@ -144,6 +139,8 @@ onMounted(async () => {
     vehicleInfo.value = vehicleData.vehicle
   } catch (err) {
     console.error('載入資料失敗:', err)
+  } finally {
+    pageReady.value = true
   }
 })
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!authChecked" class="min-h-screen bg-black"></div>
+  <PageSkeleton v-if="!pageReady" variant="tracking" />
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
     <AppHeader>
       <template #end>
@@ -9,13 +9,7 @@
 
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
       <!-- 即時狀態 -->
-      <div v-if="isLoading" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-        <div v-for="i in 3" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
-          <div class="skeleton h-3 w-16 bg-white/5"></div>
-          <div class="skeleton h-7 w-20 bg-white/5"></div>
-        </div>
-      </div>
-      <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div class="border border-white/10 rounded-sm p-4">
           <div class="text-xs text-white/40 tracking-wider uppercase mb-1">車輛狀態</div>
           <div class="text-xl font-light" :class="stateColor">{{ stateLabel }}</div>
@@ -79,11 +73,10 @@
 </template>
 
 <script setup>
-const { session, checkSession } = useAuth()
+const { checkSession } = useAuth()
 const { formatDateTime } = useFormatters()
 
-const authChecked = ref(false)
-const isLoading = ref(true)
+const pageReady = ref(false)
 const snapshots = ref([])
 const latest = ref(null)
 const cronInfo = ref(null)
@@ -210,12 +203,11 @@ onMounted(async () => {
     await navigateTo('/auth/login')
     return
   }
-  authChecked.value = true
 
   try {
     await refreshData()
   } finally {
-    isLoading.value = false
+    pageReady.value = true
   }
 
   refreshTimer = setInterval(refreshData, 30 * 1000)

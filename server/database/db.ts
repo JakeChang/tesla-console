@@ -38,6 +38,9 @@ const SCHEMA_SQL = [
     \`completed\` integer DEFAULT false NOT NULL,
     \`raw_data_start\` text,
     \`raw_data_end\` text,
+    \`ai_analysis\` text,
+    \`ai_analysis_model\` text,
+    \`ai_analyzed_at\` integer,
     \`created_at\` integer NOT NULL,
     FOREIGN KEY (\`vehicle_id\`) REFERENCES \`vehicles\`(\`id\`)
   )`,
@@ -93,6 +96,9 @@ const SCHEMA_SQL = [
 // 補上舊資料表缺失的欄位（ALTER TABLE 不支援 IF NOT EXISTS，用 try-catch）
 const MIGRATIONS_SQL = [
   `ALTER TABLE \`cron_state\` ADD COLUMN \`poll_mode\` text DEFAULT 'gps' NOT NULL`,
+  `ALTER TABLE \`charging_logs\` ADD COLUMN \`ai_analysis\` text`,
+  `ALTER TABLE \`charging_logs\` ADD COLUMN \`ai_analysis_model\` text`,
+  `ALTER TABLE \`charging_logs\` ADD COLUMN \`ai_analyzed_at\` integer`,
 ]
 
 function _initDb(config: DbConfig) {

@@ -1,11 +1,14 @@
 {
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "tesla-console"
-  ],
   "permissions": {
     "allow": [
       "mcp__tesla-console__get_charging_report"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "tesla-console"
+  ],
+  "disabledMcpjsonServers": [
+    "tesla-console"
+  ]
 }

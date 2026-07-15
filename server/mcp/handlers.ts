@@ -1,7 +1,7 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs, aiAnalyses, vehicles } from '~~/server/database/schema'
 import { eq, desc } from 'drizzle-orm'
-import { calcSimpleStats, generateMonthlyStats, generateOverallSummary } from '~~/server/utils/charging-stats'
+import { calcSimpleStats, generateMonthlyStats, generateOverallSummary, generatePeriodSummaries } from '~~/server/utils/charging-stats'
 
 /** MCP 工具實作 */
 export async function handleToolCall(name: string, args: any): Promise<string> {
@@ -14,19 +14,33 @@ export async function handleToolCall(name: string, args: any): Promise<string> {
     }
 
     case 'list_charging_logs': {
-      const limit = Math.min(Number(args?.limit) || 100, 500)
-      const logs = await db.select().from(chargingLogs)
-        .orderBy(desc(chargingLogs.start_at))
-        .limit(limit)
+      // 列表可選 limit；統計永遠以全部已完成紀錄計算
+      const hasLimit = args?.limit !== undefined && args?.limit !== null && args?.limit !== ''
+      const limit = hasLimit ? Math.min(Math.max(Number(args.limit) || 1, 1), 500) : null
+
+      const allCompleted = await db.select().from(chargingLogs)
+        .where(eq(chargingLogs.completed, true))
         .all()
 
-      const completed = logs.filter(l => l.completed)
-      const active = logs.find(l => !l.completed) || null
+      const logsQuery = db.select().from(chargingLogs)
+        .orderBy(desc(chargingLogs.start_at))
+
+      const logs = limit != null
+        ? await logsQuery.limit(limit).all()
+        : await logsQuery.all()
+
+      const active = logs.find(l => !l.completed)
+        || (await db.select().from(chargingLogs)
+          .where(eq(chargingLogs.completed, false))
+          .orderBy(desc(chargingLogs.start_at))
+          .limit(1)
+          .get())
+        || null
 
       return JSON.stringify({
         logs,
         active,
-        stats: calcSimpleStats(completed),
+        stats: calcSimpleStats(allCompleted),
       }, null, 2)
     }
 
@@ -38,8 +52,9 @@ export async function handleToolCall(name: string, args: any): Promise<string> {
 
       const months = generateMonthlyStats(logs)
       const summary = generateOverallSummary(months)
+      const periods = generatePeriodSummaries(logs)
 
-      return JSON.stringify({ months, summary }, null, 2)
+      return JSON.stringify({ months, summary, periods }, null, 2)
     }
 
     case 'list_ai_analyses': {

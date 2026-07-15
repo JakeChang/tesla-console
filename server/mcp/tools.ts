@@ -17,7 +17,7 @@ export const TOOLS = [
   },
   {
     name: 'get_charging_report',
-    description: '取得充電月報，按月分組統計費用、度數、快充慢充比例，含全期間摘要',
+    description: '取得充電月報，按月分組統計費用、度數、快充慢充比例，含本月/本季/今年/自從開始四期間摘要',
     inputSchema: { type: 'object', properties: {}, required: [] },
   },
   {

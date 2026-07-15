@@ -1,13 +1,9 @@
 <template>
-  <div class="min-h-screen bg-black flex items-center justify-center" data-theme="tesla">
+  <PageSkeleton v-if="isProcessing" variant="auth" :show-header="false" />
+  <div v-else class="min-h-screen bg-black flex items-center justify-center" data-theme="tesla">
     <div class="w-96 p-8">
       <div class="text-center">
-        <div v-if="isProcessing" class="space-y-6">
-          <span class="loading loading-spinner loading-lg text-[#E31937]"></span>
-          <h2 class="text-xl font-light tracking-wide">處理中...</h2>
-          <p class="text-white/40 text-sm">正在綁定您的 Tesla 帳號</p>
-        </div>
-        <div v-else-if="errorMsg" class="space-y-6">
+        <div v-if="errorMsg" class="space-y-6">
           <div class="text-red-400 text-4xl font-light">!</div>
           <h2 class="text-xl font-light text-red-400">綁定失敗</h2>
           <p class="text-white/40 text-sm">{{ errorMsg }}</p>

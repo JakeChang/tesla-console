@@ -1,12 +1,12 @@
 <template>
   <div class="border border-white/10 rounded-sm p-4">
     <div class="flex justify-between items-center mb-3">
-      <button @click="prevMonth" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      <button @click="prevMonth" aria-label="上個月" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
       </button>
-      <span class="text-xs font-light text-white tracking-wider">{{ calendarYear }} 年 {{ calendarMonth }} 月</span>
-      <button @click="nextMonth" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      <span class="text-xs font-light text-white tracking-wider" aria-live="polite">{{ calendarYear }} 年 {{ calendarMonth }} 月</span>
+      <button @click="nextMonth" aria-label="下個月" class="btn btn-ghost btn-xs text-white/50 hover:text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
       </button>
     </div>
     <div class="grid grid-cols-7 gap-1 mb-1">
@@ -14,9 +14,15 @@
     </div>
     <div class="grid grid-cols-7 gap-1">
       <div v-for="(cell, idx) in calendarCells" :key="idx"
-        class="aspect-square flex flex-col items-center justify-center rounded-sm text-[11px] cursor-pointer transition-colors"
-        :class="cellClass(cell)"
-        @click="cell.day && selectCalendarDate(cell)">
+        class="aspect-square flex flex-col items-center justify-center rounded-sm text-[11px] transition-colors"
+        :class="[cellClass(cell), cell.day ? 'cursor-pointer' : '']"
+        :role="cell.day ? 'button' : undefined"
+        :tabindex="cell.day ? 0 : undefined"
+        :aria-label="cell.day ? `${calendarYear} 年 ${calendarMonth} 月 ${cell.day} 日${cell.charges > 0 ? `，${cell.charges} 筆充電` : ''}` : undefined"
+        :aria-pressed="cell.day && props.selectedDate?.year === calendarYear && props.selectedDate?.month === calendarMonth && props.selectedDate?.day === cell.day ? 'true' : undefined"
+        @click="cell.day && selectCalendarDate(cell)"
+        @keydown.enter.prevent="cell.day && selectCalendarDate(cell)"
+        @keydown.space.prevent="cell.day && selectCalendarDate(cell)">
         <span v-if="cell.day" class="leading-none">{{ cell.day }}</span>
         <div v-if="cell.charges > 0" class="flex gap-0.5 mt-0.5">
           <span v-for="n in Math.min(cell.charges, 3)" :key="n" class="w-1 h-1 rounded-full"

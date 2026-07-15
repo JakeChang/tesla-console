@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!authChecked" class="min-h-screen bg-black"></div>
+  <PageSkeleton v-if="!pageReady" variant="report" />
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
     <AppHeader />
 
@@ -7,56 +7,56 @@
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
       <div class="mb-6">
         <h1 class="text-2xl font-light tracking-wide">充電報表</h1>
-        <p class="text-white/40 text-sm mt-1">每月充電統計與趨勢分析</p>
+        <p class="text-white/40 text-sm mt-1">依本月、本季、今年與全部期間檢視充電統計與趨勢</p>
       </div>
 
-      <div v-if="isLoading" class="space-y-8">
-        <!-- 總覽 skeleton -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div v-for="i in 4" :key="i" class="border border-white/10 rounded-sm p-4 space-y-2">
-            <div class="skeleton h-3 w-20 bg-white/5"></div>
-            <div class="skeleton h-8 w-28 bg-white/5"></div>
-            <div class="skeleton h-3 w-24 bg-white/5"></div>
-          </div>
+      <template v-if="report">
+        <!-- 期間切換 -->
+        <div class="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="統計期間">
+          <button
+            v-for="p in periodTabs"
+            :key="p.key"
+            role="tab"
+            :aria-selected="selectedPeriod === p.key"
+            @click="selectedPeriod = p.key"
+            class="px-3 py-1.5 rounded-sm text-xs tracking-wider transition-colors border"
+            :class="selectedPeriod === p.key
+              ? 'bg-[#E31937] border-[#E31937] text-white'
+              : 'bg-white/5 border-white/10 text-white/50 hover:border-white/25 hover:text-white/80'"
+          >
+            {{ p.label }}
+          </button>
         </div>
-        <!-- AI 分析 skeleton -->
-        <div class="border border-white/10 rounded-sm p-6 space-y-3">
-          <div class="skeleton h-4 w-24 bg-white/5"></div>
-          <div class="skeleton h-3 w-full bg-white/5"></div>
-          <div class="skeleton h-3 w-4/5 bg-white/5"></div>
-          <div class="skeleton h-3 w-3/5 bg-white/5"></div>
+        <div class="text-[10px] text-white/30 mb-6 tracking-wider">
+          {{ activePeriod?.description || '' }}
+          <span v-if="activePeriod?.from"> · {{ activePeriod.from }} ~ {{ activePeriod.to }}</span>
         </div>
-        <!-- 圖表 skeleton -->
-        <div class="border border-white/10 rounded-sm p-6">
-          <div class="skeleton h-3 w-32 bg-white/5 mb-4"></div>
-          <div class="flex items-end gap-2 h-48">
-            <div v-for="i in 7" :key="i" class="flex-1 skeleton bg-white/5" :style="{ height: (30 + Math.random() * 70) + '%' }"></div>
-          </div>
-        </div>
-      </div>
 
-      <template v-else-if="report">
-        <!-- 全期間總覽 -->
+        <!-- 期間總覽 -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div class="border border-white/10 rounded-sm p-4">
             <div class="text-xs text-white/40 tracking-wider uppercase mb-1">總充電次數</div>
-            <div class="text-2xl font-light text-white">{{ report.summary.totalSessions }}</div>
-            <div class="text-xs text-white/30">{{ report.summary.totalMonths }} 個月</div>
+            <div class="text-2xl font-light text-white">{{ activePeriod?.totalSessions ?? 0 }}</div>
+            <div class="text-xs text-white/30">
+              快充 {{ activePeriod?.fastCount ?? 0 }} / 慢充 {{ activePeriod?.slowCount ?? 0 }}
+            </div>
           </div>
           <div class="border border-white/10 rounded-sm p-4">
             <div class="text-xs text-white/40 tracking-wider uppercase mb-1">總花費</div>
-            <div class="text-2xl font-light text-white">NT$ {{ report.summary.totalCost.toLocaleString() }}</div>
-            <div class="text-xs text-white/30">平均 NT$ {{ report.summary.avgCostPerSession }}/次</div>
+            <div class="text-2xl font-light text-white">NT$ {{ (activePeriod?.totalCost ?? 0).toLocaleString() }}</div>
+            <div class="text-xs text-white/30">平均 NT$ {{ activePeriod?.avgCostPerSession ?? 0 }}/次</div>
           </div>
           <div class="border border-white/10 rounded-sm p-4">
             <div class="text-xs text-white/40 tracking-wider uppercase mb-1">總電量</div>
-            <div class="text-2xl font-light text-white">{{ report.summary.totalKwh }} kWh</div>
-            <div class="text-xs text-white/30">NT$ {{ report.summary.avgCostPerKwh }}/kWh</div>
+            <div class="text-2xl font-light text-white">{{ activePeriod?.totalKwh ?? 0 }} kWh</div>
+            <div class="text-xs text-white/30">NT$ {{ activePeriod?.avgCostPerKwh ?? 0 }}/kWh</div>
           </div>
           <div class="border border-white/10 rounded-sm p-4">
             <div class="text-xs text-white/40 tracking-wider uppercase mb-1">月均花費</div>
-            <div class="text-2xl font-light text-white">NT$ {{ report.summary.avgMonthlyCost.toLocaleString() }}</div>
-            <div class="text-xs text-white/30">每月平均</div>
+            <div class="text-2xl font-light text-white">NT$ {{ (activePeriod?.avgMonthlyCost ?? 0).toLocaleString() }}</div>
+            <div class="text-xs text-white/30">
+              {{ activePeriod?.totalMonths ?? 0 }} 個月
+            </div>
           </div>
         </div>
 
@@ -103,7 +103,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
               </svg>
               <div class="text-xs text-white/30">點擊「產生新分析」</div>
-              <div class="text-[10px] text-white/20 mt-1">AI 將根據您的充電數據提供深度分析與省錢建議</div>
+              <div class="text-[10px] text-white/20 mt-1">AI 將依本月、本季、今年、自從開始四個期間分析並給出建議</div>
             </div>
           </div>
 
@@ -120,8 +120,12 @@
 
         <!-- 月度費用長條圖 -->
         <div class="border border-white/10 rounded-sm p-6 mb-8">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-4">每月充電花費趨勢</div>
-          <div class="flex items-end gap-2 h-48">
+          <div class="text-xs text-white/40 tracking-wider uppercase mb-4">
+            每月充電花費趨勢
+            <span class="text-white/25 normal-case tracking-normal ml-2">{{ periodLabel }}</span>
+          </div>
+          <div v-if="sortedMonths.length === 0" class="text-center py-12 text-xs text-white/30">此期間尚無資料</div>
+          <div v-else class="flex items-end gap-2 h-48" role="img" :aria-label="`每月充電花費趨勢圖，共 ${sortedMonths.length} 個月，最高 NT$ ${maxCost.toLocaleString()}`">
             <div v-for="m in sortedMonths" :key="m.month" class="flex-1 flex flex-col items-center gap-1">
               <div class="text-[10px] text-white/50">{{ m.totalCost }}</div>
               <div
@@ -136,18 +140,22 @@
 
         <!-- 月度充電次數長條圖 -->
         <div class="border border-white/10 rounded-sm p-6 mb-8">
-          <div class="text-xs text-white/40 tracking-wider uppercase mb-4">每月充電次數</div>
-          <div class="flex items-end gap-2 h-32">
+          <div class="text-xs text-white/40 tracking-wider uppercase mb-4">
+            每月充電次數
+            <span class="text-white/25 normal-case tracking-normal ml-2">{{ periodLabel }}</span>
+          </div>
+          <div v-if="sortedMonths.length === 0" class="text-center py-10 text-xs text-white/30">此期間尚無資料</div>
+          <div v-else class="flex items-end gap-2 h-32" role="img" :aria-label="`每月充電次數圖，共 ${sortedMonths.length} 個月`">
             <div v-for="m in sortedMonths" :key="'count-' + m.month" class="flex-1 flex flex-col items-center gap-1">
               <div class="text-[10px] text-white/50">{{ m.totalSessions }}</div>
               <div class="w-full flex flex-col-reverse rounded-t-sm overflow-hidden" :style="{ height: barHeightSessions(m.totalSessions) + 'px', minHeight: '2px' }">
-                <div class="bg-[#E31937]" :style="{ height: (m.fastCount / m.totalSessions * 100) + '%' }"></div>
-                <div class="bg-blue-400" :style="{ height: (m.slowCount / m.totalSessions * 100) + '%' }"></div>
+                <div class="bg-[#E31937]" :style="{ height: (m.fastCount / Math.max(m.totalSessions, 1) * 100) + '%' }"></div>
+                <div class="bg-blue-400" :style="{ height: (m.slowCount / Math.max(m.totalSessions, 1) * 100) + '%' }"></div>
               </div>
               <div class="text-[10px] text-white/40 whitespace-nowrap">{{ formatMonth(m.month) }}</div>
             </div>
           </div>
-          <div class="flex gap-4 mt-3 justify-center">
+          <div v-if="sortedMonths.length > 0" class="flex gap-4 mt-3 justify-center">
             <div class="flex items-center gap-1 text-[10px] text-white/50"><span class="w-2 h-2 bg-[#E31937] rounded-sm"></span> 快充</div>
             <div class="flex items-center gap-1 text-[10px] text-white/50"><span class="w-2 h-2 bg-blue-400 rounded-sm"></span> 慢充</div>
           </div>
@@ -155,11 +163,19 @@
 
         <!-- 各月明細表 -->
         <div class="space-y-4">
-          <div v-for="m in report.months" :key="'detail-' + m.month"
+          <div v-if="filteredMonths.length === 0" class="border border-white/10 rounded-sm py-12 text-center text-xs text-white/30">
+            此期間尚無充電紀錄
+          </div>
+          <div v-for="m in filteredMonths" :key="'detail-' + m.month"
             class="border border-white/10 rounded-sm overflow-hidden">
             <!-- 月標題 -->
             <div class="p-4 cursor-pointer hover:bg-white/5 transition-colors flex justify-between items-center"
-              @click="toggleMonth(m.month)">
+              role="button" tabindex="0"
+              :aria-expanded="expandedMonth === m.month"
+              :aria-label="`${formatMonthFull(m.month)}，${m.totalSessions} 次充電，NT$ ${m.totalCost.toLocaleString()}`"
+              @click="toggleMonth(m.month)"
+              @keydown.enter.prevent="toggleMonth(m.month)"
+              @keydown.space.prevent="toggleMonth(m.month)">
               <div>
                 <span class="text-sm font-light text-white">{{ formatMonthFull(m.month) }}</span>
                 <span class="text-xs text-white/40 ml-3">{{ m.totalSessions }} 次充電</span>
@@ -213,23 +229,89 @@
           </div>
         </div>
       </template>
+
+      <div v-else class="border border-white/10 rounded-sm py-20 text-center">
+        <h2 class="text-xl font-light tracking-wide mb-2">尚無報表資料</h2>
+        <p class="text-white/40 text-sm">完成充電後即可查看統計與分析</p>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
+type PeriodKey = 'month' | 'quarter' | 'year' | 'all'
+
+type PeriodSummary = {
+  key: PeriodKey
+  label: string
+  description: string
+  from: string | null
+  to: string
+  totalSessions: number
+  totalCost: number
+  totalKwh: number
+  avgCostPerSession: number
+  avgCostPerKwh: number
+  fastCount: number
+  slowCount: number
+  totalMonths: number
+  avgMonthlyCost: number
+}
+
+type ReportMonth = {
+  month: string
+  totalSessions: number
+  totalCost: number
+  avgCost: number
+  totalKwh: number
+  fastCount: number
+  slowCount: number
+  records: any[]
+}
+
+type ReportData = {
+  months: ReportMonth[]
+  summary: any
+  periods: PeriodSummary[]
+  periodMonthKeys: Record<PeriodKey, string[]>
+}
+
 const { checkSession } = useAuth()
 const { formatMonth, formatMonthFull, formatDay, formatAnalysisDate } = useFormatters()
 
-const authChecked = ref(false)
-const isLoading = ref(false)
-const report = ref(null)
-const expandedMonth = ref(null)
+const pageReady = ref(false)
+const report = ref<ReportData | null>(null)
+const expandedMonth = ref<string | null>(null)
 const isAnalyzing = ref(false)
 const analysisText = ref('')
 const analysisError = ref('')
 const analysisHistory = ref<any[]>([])
 const selectedAnalysisId = ref<number | null>(null)
+const selectedPeriod = ref<PeriodKey>('month')
+
+const periodTabs = computed(() => {
+  if (report.value?.periods?.length) return report.value.periods
+  return [
+    { key: 'month' as const, label: '本月' },
+    { key: 'quarter' as const, label: '本季' },
+    { key: 'year' as const, label: '今年' },
+    { key: 'all' as const, label: '自從開始' },
+  ]
+})
+
+const activePeriod = computed(() => {
+  return report.value?.periods?.find(p => p.key === selectedPeriod.value) || null
+})
+
+const periodLabel = computed(() => activePeriod.value?.label || '')
+
+const filteredMonths = computed(() => {
+  if (!report.value) return []
+  const keys = report.value.periodMonthKeys?.[selectedPeriod.value]
+  if (!keys || selectedPeriod.value === 'all') return report.value.months
+  const keySet = new Set(keys)
+  return report.value.months.filter(m => keySet.has(m.month))
+})
 
 onMounted(async () => {
   const status = await checkSession()
@@ -237,8 +319,8 @@ onMounted(async () => {
     await navigateTo('/auth/login')
     return
   }
-  authChecked.value = true
   await Promise.all([loadReport(), loadAnalysisHistory()])
+  pageReady.value = true
 })
 
 const loadAnalysisHistory = async () => {
@@ -342,35 +424,31 @@ function processInline(text: string): string {
 }
 
 const loadReport = async () => {
-  isLoading.value = true
   try {
     report.value = await $fetch('/api/report')
   } catch (err) {
     console.error('載入報表失敗:', err)
-  } finally {
-    isLoading.value = false
   }
 }
 
 const sortedMonths = computed(() => {
-  if (!report.value) return []
-  return [...report.value.months].sort((a, b) => a.month.localeCompare(b.month))
+  return [...filteredMonths.value].sort((a, b) => a.month.localeCompare(b.month))
 })
 
 const maxCost = computed(() => {
-  if (!report.value) return 1
-  return Math.max(...report.value.months.map(m => m.totalCost), 1)
+  if (sortedMonths.value.length === 0) return 1
+  return Math.max(...sortedMonths.value.map(m => m.totalCost), 1)
 })
 
 const maxSessions = computed(() => {
-  if (!report.value) return 1
-  return Math.max(...report.value.months.map(m => m.totalSessions), 1)
+  if (sortedMonths.value.length === 0) return 1
+  return Math.max(...sortedMonths.value.map(m => m.totalSessions), 1)
 })
 
-const barHeight = (cost) => Math.max(Math.round((cost / maxCost.value) * 160), 2)
-const barHeightSessions = (count) => Math.max(Math.round((count / maxSessions.value) * 100), 2)
+const barHeight = (cost: number) => Math.max(Math.round((cost / maxCost.value) * 160), 2)
+const barHeightSessions = (count: number) => Math.max(Math.round((count / maxSessions.value) * 100), 2)
 
-const toggleMonth = (month) => {
+const toggleMonth = (month: string) => {
   expandedMonth.value = expandedMonth.value === month ? null : month
 }
 </script>

@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-black flex items-center justify-center" data-theme="tesla">
+  <PageSkeleton v-if="!pageReady" variant="auth" :show-header="false" />
+  <div v-else class="min-h-screen bg-black flex items-center justify-center" data-theme="tesla">
     <div class="w-96 p-8">
       <div class="text-center mb-10">
         <h1 class="text-3xl font-light tracking-[0.3em] text-white mb-3">TESLA</h1>
@@ -7,8 +8,9 @@
       </div>
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label class="text-xs text-white/40 tracking-wider uppercase mb-1 block">帳號</label>
+          <label for="login-username" class="text-xs text-white/40 tracking-wider uppercase mb-1 block">帳號</label>
           <input
+            id="login-username"
             v-model="username"
             type="text"
             autocomplete="username"
@@ -17,8 +19,9 @@
           />
         </div>
         <div>
-          <label class="text-xs text-white/40 tracking-wider uppercase mb-1 block">密碼</label>
+          <label for="login-password" class="text-xs text-white/40 tracking-wider uppercase mb-1 block">密碼</label>
           <input
+            id="login-password"
             v-model="password"
             type="password"
             autocomplete="current-password"
@@ -50,6 +53,7 @@
 const { isLoading, error, login, checkSession } = useAuth()
 const username = ref('')
 const password = ref('')
+const pageReady = ref(false)
 
 const handleLogin = async () => {
   const success = await login(username.value, password.value)
@@ -58,11 +62,16 @@ const handleLogin = async () => {
   }
 }
 
-// 已登入則直接跳轉
+// 已登入則直接跳轉；檢查完成後才顯示表單
 onMounted(async () => {
-  const session = await checkSession()
-  if (session.authenticated) {
-    await navigateTo('/')
+  try {
+    const session = await checkSession()
+    if (session.authenticated) {
+      await navigateTo('/')
+      return
+    }
+  } finally {
+    pageReady.value = true
   }
 })
 </script>

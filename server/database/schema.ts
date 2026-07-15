@@ -24,6 +24,10 @@ export const chargingLogs = sqliteTable('charging_logs', {
   completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
   raw_data_start: text('raw_data_start'),
   raw_data_end: text('raw_data_end'),
+  /** 單筆充電 AI 車況分析結果 */
+  ai_analysis: text('ai_analysis'),
+  ai_analysis_model: text('ai_analysis_model'),
+  ai_analyzed_at: integer('ai_analyzed_at', { mode: 'timestamp' }),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 

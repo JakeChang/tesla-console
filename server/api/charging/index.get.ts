@@ -1,6 +1,6 @@
 import { getDb } from '~~/server/database/db'
 import { chargingLogs } from '~~/server/database/schema'
-import { desc } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { requireAuth } from '~~/server/utils/auth'
 import { calcSimpleStats } from '~~/server/utils/charging-stats'
 
@@ -8,20 +8,36 @@ export default defineEventHandler(async (event) => {
   await requireAuth(event)
 
   const query = getQuery(event)
-  const limit = Math.min(Number(query.limit) || 100, 500)
+  // 僅在明確指定 limit 時才截斷列表；統計永遠以全部已完成紀錄計算
+  const hasLimit = query.limit !== undefined && query.limit !== ''
+  const limit = hasLimit ? Math.min(Math.max(Number(query.limit) || 1, 1), 500) : null
 
   const db = getDb()
-  const logs = await db.select().from(chargingLogs)
-    .orderBy(desc(chargingLogs.start_at))
-    .limit(limit)
+
+  // 統計必須涵蓋全部已完成紀錄，不可受列表 limit 影響
+  const allCompleted = await db.select().from(chargingLogs)
+    .where(eq(chargingLogs.completed, true))
     .all()
 
-  const completed = logs.filter(l => l.completed)
-  const active = logs.find(l => !l.completed) || null
+  const logsQuery = db.select().from(chargingLogs)
+    .orderBy(desc(chargingLogs.start_at))
+
+  const logs = limit != null
+    ? await logsQuery.limit(limit).all()
+    : await logsQuery.all()
+
+  // 進行中的充電可能不在 limit 範圍內，另外查詢
+  const active = logs.find(l => !l.completed)
+    || (await db.select().from(chargingLogs)
+      .where(eq(chargingLogs.completed, false))
+      .orderBy(desc(chargingLogs.start_at))
+      .limit(1)
+      .get())
+    || null
 
   return {
     logs,
     active,
-    stats: calcSimpleStats(completed),
+    stats: calcSimpleStats(allCompleted),
   }
 })

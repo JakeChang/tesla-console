@@ -33,6 +33,7 @@
 
     <!-- Tesla Token 過期提示 -->
     <div v-if="sessionData.teslaTokenExpired && !dismissed"
+      role="alert" aria-live="polite"
       class="fixed top-16 left-0 right-0 z-40 bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2.5 flex items-center justify-between">
       <div class="flex items-center gap-2 text-xs">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,7 +42,7 @@
         <span class="text-yellow-300">Tesla 帳號連線已過期，部分功能無法使用（電量、里程自動擷取）。</span>
         <a @click="linkTesla" class="text-yellow-400 underline cursor-pointer hover:text-yellow-300">重新綁定</a>
       </div>
-      <button @click="dismissed = true" class="btn btn-ghost btn-xs text-yellow-400/50 hover:text-yellow-400">
+      <button @click="dismissed = true" aria-label="關閉 Tesla 連線過期提示" class="btn btn-ghost btn-xs text-yellow-400/50 hover:text-yellow-400">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>

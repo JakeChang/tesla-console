@@ -1,10 +1,16 @@
 <template>
-  <div v-if="!authChecked" class="min-h-screen bg-black"></div>
+  <PageSkeleton v-if="!pageReady" variant="charging" />
   <div v-else class="min-h-screen bg-black" data-theme="tesla">
     <AppHeader />
 
     <!-- Content -->
     <main class="max-w-6xl mx-auto px-4 py-8 pt-24">
+      <!-- 全域錯誤提示 -->
+      <div v-if="errorMsg" role="alert" aria-live="assertive"
+        class="mb-4 border border-red-500/30 rounded-sm px-4 py-3 bg-red-500/5 flex items-center justify-between">
+        <span class="text-sm text-red-400">{{ errorMsg }}</span>
+        <button @click="errorMsg = ''" aria-label="關閉錯誤訊息" class="btn btn-ghost btn-xs text-red-400/50 hover:text-red-400">✕</button>
+      </div>
       <!-- 標題列 -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -12,7 +18,8 @@
           <p class="text-white/40 text-sm mt-1">管理您的充電記錄與費用</p>
         </div>
         <button @click="loadData" :disabled="isLoading" class="btn btn-sm btn-outline border-white/20 text-white/70 hover:bg-white hover:text-black tracking-wider text-xs">
-          重新整理
+          <span v-if="isLoading" class="loading loading-spinner loading-xs"></span>
+          <span v-else>重新整理</span>
         </button>
       </div>
 
@@ -61,8 +68,8 @@
               </div>
             </div>
             <div class="mt-4 space-y-2">
-              <label class="text-xs text-white/40 tracking-wider uppercase block">充電金額 (NT$)</label>
-              <input v-model="endCost" type="number" inputmode="numeric"
+              <label for="end-cost" class="text-xs text-white/40 tracking-wider uppercase block">充電金額 (NT$)</label>
+              <input id="end-cost" v-model="endCost" type="number" inputmode="numeric"
                 class="input input-sm w-full bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:border-[#E31937] focus:outline-none"
                 placeholder="輸入金額" />
               <button @click="endCharging" :disabled="isEnding"
@@ -89,8 +96,8 @@
                 </div>
               </div>
               <div>
-                <label class="text-xs text-white/40 mb-1 block">充電地點（選填）</label>
-                <input v-model="chargeLocation" type="text"
+                <label for="charge-location" class="text-xs text-white/40 mb-1 block">充電地點（選填）</label>
+                <input id="charge-location" v-model="chargeLocation" type="text"
                   class="input input-sm w-full bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:border-[#E31937] focus:outline-none"
                   placeholder="例：台北南港超充" />
               </div>
@@ -151,7 +158,12 @@
                 <!-- 顯示模式 -->
                 <div v-if="editingId !== log.id">
                   <div class="flex justify-between items-start">
-                    <div class="flex-1 cursor-pointer" @click="toggleExpand(log.id)">
+                    <div class="flex-1 cursor-pointer" role="button" tabindex="0"
+                      :aria-expanded="expandedId === log.id"
+                      :aria-label="`充電紀錄 ${formatDateTime(log.start_at)}，${log.charge_type === 'fast' ? '快充' : '慢充'}，點擊展開詳情`"
+                      @click="toggleExpand(log.id)"
+                      @keydown.enter.prevent="toggleExpand(log.id)"
+                      @keydown.space.prevent="toggleExpand(log.id)">
                       <div class="flex items-center gap-2 mb-2">
                         <span class="text-xs px-2 py-0.5 rounded-sm border"
                           :class="log.charge_type === 'fast' ? 'border-[#E31937]/30 text-[#E31937]' : 'border-blue-400/30 text-blue-400'">
@@ -189,11 +201,11 @@
                       </div>
                     </div>
                     <div class="flex gap-1 ml-3 shrink-0">
-                      <button @click.stop="startEdit(log)" class="btn btn-ghost btn-xs text-white/30 hover:text-white/70">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      <button @click.stop="startEdit(log)" aria-label="編輯此充電紀錄" class="btn btn-ghost btn-xs text-white/30 hover:text-white/70">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
-                      <button @click.stop="confirmDelete(log.id)" class="btn btn-ghost btn-xs text-white/30 hover:text-red-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      <button @click.stop="confirmDelete(log.id)" aria-label="刪除此充電紀錄" class="btn btn-ghost btn-xs text-white/30 hover:text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
                     </div>
                   </div>
@@ -212,6 +224,44 @@
                       <div>
                         <div class="text-white/40 mb-0.5">里程</div>
                         <div class="text-white/80">{{ log.odometer ? log.odometer.toFixed(1) + ' km' : '-' }}</div>
+                      </div>
+                    </div>
+
+                    <!-- 單筆 AI 車況分析 -->
+                    <div class="border border-white/10 rounded-sm overflow-hidden">
+                      <div class="flex justify-between items-center px-3 py-2.5 bg-white/[0.02] border-b border-white/10">
+                        <div class="flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[#E31937]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          </svg>
+                          <span class="text-[10px] text-white/40 tracking-wider uppercase">AI 車況分析</span>
+                        </div>
+                        <button
+                          @click.stop="runSessionAnalysis(log)"
+                          :disabled="analyzingId === log.id || (!log.raw_data_start && !log.raw_data_end)"
+                          class="btn btn-xs bg-[#E31937] border-none text-white hover:bg-[#c4152f] tracking-wider"
+                        >
+                          <span v-if="analyzingId === log.id" class="flex items-center gap-1">
+                            <span class="loading loading-spinner loading-xs"></span> 分析中
+                          </span>
+                          <span v-else>{{ log.ai_analysis ? '重新分析' : '分析此筆' }}</span>
+                        </button>
+                      </div>
+                      <div class="px-3 py-3">
+                        <div v-if="analysisErrors[log.id]" class="text-xs text-red-400">{{ analysisErrors[log.id] }}</div>
+                        <div v-else-if="log.ai_analysis" class="session-ai-analysis" v-html="renderAnalysis(log.ai_analysis)"></div>
+                        <div v-else class="text-[11px] text-white/30 leading-relaxed">
+                          <template v-if="log.raw_data_start || log.raw_data_end">
+                            根據開始／結束充電時的車輛狀態，分析充電表現、車況與可能問題
+                          </template>
+                          <template v-else>
+                            此紀錄沒有 Tesla API 原始資料，無法分析
+                          </template>
+                        </div>
+                      </div>
+                      <div v-if="log.ai_analysis && log.ai_analyzed_at" class="px-3 py-1.5 border-t border-white/5 flex justify-between">
+                        <span class="text-[10px] text-white/20">{{ log.ai_analysis_model || '' }}</span>
+                        <span class="text-[10px] text-white/20">{{ formatDateTime(log.ai_analyzed_at) }}</span>
                       </div>
                     </div>
 
@@ -259,24 +309,24 @@
                         </div>
                       </div>
                       <div>
-                        <label class="text-xs text-white/40 mb-1 block">地點</label>
-                        <input v-model="editForm.location" type="text" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
+                        <label :for="`edit-location-${log.id}`" class="text-xs text-white/40 mb-1 block">地點</label>
+                        <input :id="`edit-location-${log.id}`" v-model="editForm.location" type="text" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
                       </div>
                       <div>
-                        <label class="text-xs text-white/40 mb-1 block">金額 (NT$)</label>
-                        <input v-model="editForm.cost_ntd" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
+                        <label :for="`edit-cost-${log.id}`" class="text-xs text-white/40 mb-1 block">金額 (NT$)</label>
+                        <input :id="`edit-cost-${log.id}`" v-model="editForm.cost_ntd" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
                       </div>
                       <div>
-                        <label class="text-xs text-white/40 mb-1 block">起始電量 (%)</label>
-                        <input v-model="editForm.battery_start" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
+                        <label :for="`edit-battery-start-${log.id}`" class="text-xs text-white/40 mb-1 block">起始電量 (%)</label>
+                        <input :id="`edit-battery-start-${log.id}`" v-model="editForm.battery_start" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
                       </div>
                       <div>
-                        <label class="text-xs text-white/40 mb-1 block">結束電量 (%)</label>
-                        <input v-model="editForm.battery_end" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
+                        <label :for="`edit-battery-end-${log.id}`" class="text-xs text-white/40 mb-1 block">結束電量 (%)</label>
+                        <input :id="`edit-battery-end-${log.id}`" v-model="editForm.battery_end" type="number" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
                       </div>
                       <div>
-                        <label class="text-xs text-white/40 mb-1 block">里程 (km)</label>
-                        <input v-model="editForm.odometer" type="number" step="0.1" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
+                        <label :for="`edit-odometer-${log.id}`" class="text-xs text-white/40 mb-1 block">里程 (km)</label>
+                        <input :id="`edit-odometer-${log.id}`" v-model="editForm.odometer" type="number" step="0.1" class="input input-xs w-full bg-white/5 border border-white/10 text-white focus:border-[#E31937] focus:outline-none" />
                       </div>
                     </div>
                     <div class="flex justify-end gap-2">
@@ -317,7 +367,7 @@
 const { session, checkSession, linkTesla } = useAuth()
 const { formatTime, formatDateTime, formatDuration } = useFormatters()
 
-const authChecked = ref(false)
+const pageReady = ref(false)
 const sessionData = computed(() => session.value)
 
 const isLoading = ref(false)
@@ -325,6 +375,7 @@ const isStarting = ref(false)
 const isEnding = ref(false)
 const isSaving = ref(false)
 const isDeleting = ref(false)
+const errorMsg = ref('')
 
 const chargeType = ref('fast')
 const chargeLocation = ref('')
@@ -340,6 +391,10 @@ const editForm = ref({})
 
 // 展開狀態
 const expandedId = ref(null)
+
+// 單筆 AI 分析
+const analyzingId = ref(null)
+const analysisErrors = ref({})
 
 // 刪除狀態
 const deleteModal = ref(null)
@@ -385,8 +440,8 @@ onMounted(async () => {
     await navigateTo('/auth/login')
     return
   }
-  authChecked.value = true
   await loadData()
+  pageReady.value = true
   timer = setInterval(() => {
     if (activeSession.value) activeSession.value = { ...activeSession.value }
   }, 60000)
@@ -420,7 +475,7 @@ const startCharging = async () => {
     await loadData()
   } catch (err) {
     console.error('開始充電失敗:', err)
-    alert(err.data?.message || err.statusMessage || '開始充電失敗')
+    errorMsg.value = err.data?.message || err.statusMessage || '開始充電失敗'
   } finally {
     isStarting.value = false
   }
@@ -438,7 +493,7 @@ const endCharging = async () => {
     await loadData()
   } catch (err) {
     console.error('結束充電失敗:', err)
-    alert(err.data?.message || err.statusMessage || '結束充電失敗')
+    errorMsg.value = err.data?.message || err.statusMessage || '結束充電失敗'
   } finally {
     isEnding.value = false
   }
@@ -477,7 +532,7 @@ const saveEdit = async () => {
     await loadData()
   } catch (err) {
     console.error('更新失敗:', err)
-    alert(err.data?.message || err.statusMessage || '更新失敗')
+    errorMsg.value = err.data?.message || err.statusMessage || '更新失敗'
   } finally {
     isSaving.value = false
   }
@@ -496,7 +551,8 @@ const doDelete = async () => {
     await loadData()
   } catch (err) {
     console.error('刪除失敗:', err)
-    alert(err.data?.message || err.statusMessage || '刪除失敗')
+    errorMsg.value = err.data?.message || err.statusMessage || '刪除失敗'
+    closeDeleteModal()
   } finally {
     isDeleting.value = false
   }
@@ -504,6 +560,79 @@ const doDelete = async () => {
 
 // --- 展開 ---
 const toggleExpand = (id) => { expandedId.value = expandedId.value === id ? null : id }
+
+const runSessionAnalysis = async (log) => {
+  analyzingId.value = log.id
+  analysisErrors.value = { ...analysisErrors.value, [log.id]: '' }
+  try {
+    const data = await $fetch(`/api/charging/${log.id}/analyze`, {
+      method: 'POST',
+      body: { force: Boolean(log.ai_analysis) },
+    })
+    // 更新列表中的該筆紀錄
+    const idx = logs.value.findIndex(l => l.id === log.id)
+    if (idx >= 0) {
+      logs.value[idx] = {
+        ...logs.value[idx],
+        ai_analysis: data.analysis,
+        ai_analysis_model: data.model,
+        ai_analyzed_at: data.analyzed_at,
+      }
+    }
+  } catch (err) {
+    console.error('單筆分析失敗:', err)
+    analysisErrors.value = {
+      ...analysisErrors.value,
+      [log.id]: err.data?.message || err.statusMessage || 'AI 分析失敗',
+    }
+  } finally {
+    analyzingId.value = null
+  }
+}
+
+const renderAnalysis = (md) => {
+  if (!md) return ''
+  return parseMarkdown(md)
+}
+
+function parseMarkdown(md) {
+  let html = md
+  const lines = html.split('\n')
+  const result = []
+  let inList = false
+  let listType = ''
+
+  const closeLst = () => {
+    if (inList) { result.push(listType === 'ul' ? '</ul>' : '</ol>'); inList = false; listType = '' }
+  }
+  const processInline = (text) => text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+
+  for (let line of lines) {
+    if (line.match(/^#### /)) { closeLst(); result.push(`<h4>${processInline(line.slice(5))}</h4>`); continue }
+    if (line.match(/^### /)) { closeLst(); result.push(`<h3>${processInline(line.slice(4))}</h3>`); continue }
+    if (line.match(/^## /)) { closeLst(); result.push(`<h2>${processInline(line.slice(3))}</h2>`); continue }
+    if (line.match(/^# /)) { closeLst(); result.push(`<h1>${processInline(line.slice(2))}</h1>`); continue }
+    if (line.match(/^---+$/)) { closeLst(); result.push('<hr />'); continue }
+    if (line.match(/^\s*[\-\*]\s+/)) {
+      if (!inList || listType !== 'ul') { closeLst(); result.push('<ul>'); inList = true; listType = 'ul' }
+      result.push(`<li>${processInline(line.replace(/^\s*[\-\*]\s+/, ''))}</li>`)
+      continue
+    }
+    if (line.match(/^\s*\d+\.\s+/)) {
+      if (!inList || listType !== 'ol') { closeLst(); result.push('<ol>'); inList = true; listType = 'ol' }
+      result.push(`<li>${processInline(line.replace(/^\s*\d+\.\s+/, ''))}</li>`)
+      continue
+    }
+    if (line.trim() === '') { closeLst(); result.push(''); continue }
+    closeLst()
+    result.push(`<p>${processInline(line)}</p>`)
+  }
+  closeLst()
+  return result.join('\n')
+}
 
 const parseRaw = (raw) => {
   if (!raw) return null
@@ -519,14 +648,40 @@ const sectionNameMap = {
 const formatSectionName = (key) => sectionNameMap[key] || key
 const formatFieldName = (key) => key.replace(/_/g, ' ')
 
+const formatUnixTime = (val) => {
+  // Tesla API：毫秒通常 > 1e12，秒通常在 1e9～1e12
+  if (val < 1e9) return String(val)
+  const ms = val > 1e12 ? val : val * 1000
+  return new Date(ms).toLocaleString('zh-TW')
+}
+
+const isUnixTimeField = (key) =>
+  key.includes('timestamp')
+  || key === 'scheduled_departure_time'
+  || key.includes('last_seen_pressure_time')
+
 const formatFieldValue = (key, val) => {
   if (typeof val === 'boolean') return val ? 'Yes' : 'No'
   if (typeof val === 'number' && (key.includes('range') || key.includes('miles') || key === 'odometer'))
     return (val * MILES_TO_KM).toFixed(1) + ' km'
-  if (typeof val === 'number' && key.includes('timestamp'))
-    return new Date(val * 1000).toLocaleString('zh-TW')
+  if (typeof val === 'number' && isUnixTimeField(key))
+    return formatUnixTime(val)
   if (typeof val === 'number' && !Number.isInteger(val))
     return val.toFixed(2)
   return String(val)
 }
 </script>
+
+<style scoped>
+.session-ai-analysis :deep(h1) { font-size: 0.875rem; font-weight: 300; color: white; margin: 0.75rem 0 0.375rem; }
+.session-ai-analysis :deep(h2) { font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.9); margin: 0.75rem 0 0.375rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.25rem; }
+.session-ai-analysis :deep(h3) { font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.8); margin: 0.5rem 0 0.25rem; }
+.session-ai-analysis :deep(h4) { font-size: 0.7rem; font-weight: 500; color: rgba(255,255,255,0.7); margin: 0.5rem 0 0.25rem; }
+.session-ai-analysis :deep(p) { font-size: 0.7rem; color: rgba(255,255,255,0.6); line-height: 1.65; margin-bottom: 0.375rem; }
+.session-ai-analysis :deep(ul), .session-ai-analysis :deep(ol) { font-size: 0.7rem; color: rgba(255,255,255,0.6); margin: 0.375rem 0; padding-left: 1.1rem; }
+.session-ai-analysis :deep(li) { margin-bottom: 0.25rem; line-height: 1.55; }
+.session-ai-analysis :deep(strong) { color: rgba(255,255,255,0.85); font-weight: 600; }
+.session-ai-analysis :deep(em) { color: rgba(255,255,255,0.5); font-style: italic; }
+.session-ai-analysis :deep(code) { font-size: 0.65rem; background: rgba(255,255,255,0.08); padding: 0.1rem 0.3rem; border-radius: 2px; color: #E31937; }
+.session-ai-analysis :deep(hr) { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.5rem 0; }
+</style>
